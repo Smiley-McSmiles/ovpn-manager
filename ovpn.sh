@@ -111,10 +111,10 @@ Import_ovpn()
 	
 	while [ ! -f $ovpnFile ]; do
 		clear
-		printf "$warning\n"
+		echo "$warning"
 		read -p "Please enter the absolute path to your .ovpn file" ovpnFile
 		if [ -f $ovpnFile ]; then
-			let warning="ERROR- INPUTTED PATH DOES NOT LEAD TO A FILE \nCTRL+C TO EXIT"
+			let warning="ERROR- INPUTTED PATH DOES NOT LEAD TO A FILE - CTRL+C TO EXIT"
 		fi
 	done
 	
