@@ -146,7 +146,7 @@ Change_Server()
 		clear
 		echo "Current OpenVPN connection:"
 		echo "$defaultVPNConnection"
-		printf $warning
+		echo $warning
 		echo "Available OpenVPN connection(s):"
 		cat -n $vpnListFile
 		echo "Please enter the number corresponding with"
@@ -155,7 +155,7 @@ Change_Server()
 
 		if [[ ! $defaultVPNConnectionNumber == [1-$maxNumber] ]]; then
 			defaultVPNConnectionNumber=0
-			let warning="ERROR: Please select one of the numbers provided! \nOr press CTRL+C to exit..."
+			let warning="ERROR Please select one of the numbers provided! - Or press CTRL+C to exit..."
 		else
 			rm -f $vpnListFile
 			echo "defaultVPNConnection=$defaultVPNConnection" > $ovpnConf
