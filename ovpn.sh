@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0"
+version="1.0.1"
 
 Has_sudo()
 {
@@ -45,7 +45,7 @@ Fix_Permissions()
 {
 	Has_sudo
 	chown -Rfv root:openvpn /etc/openvpn
-	chmod -Rfv 755 /etc/openvpn
+	chmod -Rfv 750 /etc/openvpn
 }
 
 Change_variable()
@@ -89,6 +89,7 @@ Enable_Killswitch()
 			ufw reload
 		else
 			ufw allow out from any to $VPN_IP
+			ufw allow in from any to $VPN_IP
 		fi
 	elif [ -x "$(command -v firewall-cmd)" ]; then 
 		firewall-cmd --permanent --add-source=$VPN_IP

@@ -31,8 +31,8 @@ Change_variable()
 Fix_Permissions()
 {
 	Has_sudo
-	chown -Rfv root:openvpn /etc/openvpn
-	chmod -Rfv 660 /etc/openvpn
+	chown -Rfv root:root /etc/openvpn
+	chmod -Rfv 750 /etc/openvpn
 	chmod -Rfv ug+X /etc/openvpn
 }
 
@@ -90,6 +90,7 @@ Disable_IPv6()
 Setup()
 {
 	Has_sudo
+	ovpnServiceLocation=/usr/lib/systemd/system/openvpn-client@.service
 	Install_dependancies
 	echo "Press ENTER to skip"
 	read -p "Input your VPN Provider : " accountFileName
@@ -103,11 +104,14 @@ Setup()
 		echo "$accountUserName" >> /etc/openvpn/accounts/$accountFileName
 	 	echo "$accountPassWord" >> /etc/openvpn/accounts/$accountFileName
 		ls -w 1 /etc/openvpn/accounts/
-		chown -Rfv root:openvpn /etc/openvpn/accounts
+		chown -Rfv root:root /etc/openvpn/accounts
  	fi
 	Fix_Permissions
 	Disable_IPv6
 	mv ovpn.sh /bin/ovpn
+	if [ ! -f $ovpnServiceLocation ]; then
+		mv -fv openvpn-client@.service $ovpnServiceLocation
+	fi
 	chmod +x /bin/ovpn
 	ovpn -h -i
 }
