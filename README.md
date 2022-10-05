@@ -13,7 +13,7 @@ sudo ./setup.sh
 # USAGE
 
 ```sh
-OpenVPN Manager v1.0.1
+OpenVPN Manager v1.0.2
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]
@@ -26,6 +26,7 @@ COMMANDS:
 -r Restart OpenVPN
 -c Change OpenVPN Connection
 -i Import OpenVPN .ovpn file
+-k [on/off] Enable or Disable the Killswitch
 -f Fix OpenVPN permissions
 -v Print OpenVPN Manager's Version
 -b Backup OpenVPN Manager Configurations

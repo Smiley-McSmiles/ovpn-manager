@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.1"
+version="1.0.2"
 
 Has_sudo()
 {
@@ -44,8 +44,17 @@ Restore()
 Fix_Permissions()
 {
 	Has_sudo
-	chown -Rfv root:openvpn /etc/openvpn
-	chmod -Rfv 750 /etc/openvpn
+	if id "openvpn" &>/dev/null; then
+		chown -Rfv openvpn:openvpn /etc/openvpn
+		chmod -Rfv 750 /etc/openvpn
+	elif id "nm-openvpn" &>/dev/null; then
+		chown -Rfv nm-openvpn:nm-openvpn /etc/openvpn
+		chmod -Rfv 750 /etc/openvpn
+	else
+		echo "ERROR - NO openvpn USER FOUND!!!"
+		echo "PLEASE SET UP YOUR OWN PERMISSIONS FOR"
+		echo "/etc/openvpn"
+	fi
 }
 
 Change_variable()
@@ -65,37 +74,56 @@ Change_variable()
 	fi
 }
 
-Enable_Killswitch()
+Killswitch()
 {
 	Has_sudo
 	source $ovpnConf
-	VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
-	
-	if [ -x "$(command -v ufw)" ]; then
-		read -p "Would you like to only have traffic come in through your VPN? : [y/N] " cutTraffic
-		if [[ $currentlyInstalled == [yY] ]] || [[ $currentlyInstalled == [yY][eE][sS] ]]; then
-			ufw --force reset
-			ufw default deny outgoing
-			ufw default deny incoming
-			ufw allow out on tun0 from any to any
-			ufw allow out from any to $VPN_IP
-			ufw allow in from any to $VPN_IP
-			ufw allow out from any to 10.0.0.0/24
-			ufw allow out from any to 172.16.0.0/24
-			ufw allow out from any to 192.168.0.0/24
-			ufw allow in from any to 10.0.0.0/24
-			ufw allow in from any to 172.16.0.0/24
-			ufw allow in from any to 192.168.0.0/24
-			ufw reload
+	onOrOff=$1
+	if [[ $onOrOff == "on" ]]; then
+		VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
+		
+		if [ -x "$(command -v ufw)" ]; then
+			read -p "Would you like to only have traffic come in through your VPN? : [y/N] " cutTraffic
+			
+			if [[ $currentlyInstalled == [yY] ]] || [[ $currentlyInstalled == [yY][eE][sS] ]]; then
+				ufw default deny outgoing
+				ufw default deny incoming
+				ufw allow out on tun0 from any to any
+				ufw allow out from any to $VPN_IP
+				ufw allow in from any to $VPN_IP
+				
+				networkInterfaces=$(ip link show | grep ": <" | cut -d ":" -f 2 | sed "s| ||g")
+				networkInterfaces=($networkInterfaces)
+				for interface in "${networkInterfaces[@]}"; do
+					if [[ $interface == "lo" ]] || [[ $interface == "tun"* ]]; then
+						echo
+					else
+						ip link set $interface down
+						ip link set $interface up
+					fi
+				done
+				
+				ufw allow out from any to 10.0.0.0/24
+				ufw allow out from any to 172.16.0.0/24
+				ufw allow out from any to 192.168.0.0/24
+				ufw allow in from any to 10.0.0.0/24
+				ufw allow in from any to 172.16.0.0/24
+				ufw allow in from any to 192.168.0.0/24
+				ufw reload
+			else
+				ufw allow out from any to $VPN_IP
+				ufw allow in from any to $VPN_IP
+			fi
+		elif [ -x "$(command -v firewall-cmd)" ]; then 
+			firewall-cmd --permanent --add-source=$VPN_IP
+			firewall-cmd --reload
 		else
-			ufw allow out from any to $VPN_IP
-			ufw allow in from any to $VPN_IP
+			echo "FAILED TO ALLOW $VPN_IP! ERROR NO 'ufw' OR 'firewall-cmd' COMMAND FOUND!";
 		fi
-	elif [ -x "$(command -v firewall-cmd)" ]; then 
-		firewall-cmd --permanent --add-source=$VPN_IP
-		firewall-cmd --reload
-	else
-		echo "FAILED TO ALLOW $VPN_IP! ERROR NO 'ufw' OR 'firewall-cmd' COMMAND FOUND!";
+	elif [[ onOrOff == "off" ]]; then
+		ufw default allow outgoing
+		ufw default allow incoming
+		ufw reload
 	fi
 }
 
@@ -161,7 +189,9 @@ Change_Server()
 			rm -f $vpnListFile
 			echo "defaultVPNConnection=$defaultVPNConnection" > $ovpnConf
 			Fix_Permissions
-			Enable_Killswitch
+			VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
+			ufw allow out from any to $VPN_IP
+			ufw allow in from any to $VPN_IP
 			Start_vpn
 			Enable_vpn
 		fi
@@ -227,6 +257,7 @@ COMMANDS:
 -r Restart OpenVPN
 -c Change OpenVPN Connection
 -i Import OpenVPN .ovpn file
+-k [on/off] Enable or Disable the Killswitch
 -f Fix OpenVPN permissions
 -v Print OpenVPN Manager's Version
 -b Backup OpenVPN Manager Configurations
@@ -253,6 +284,12 @@ if [[ -n "$1" ]]; then
 					else
 						Import_ovpn
 					fi ;;
+			-k) if [ ! -n $2 ]; then
+						echo "Please input 'on' or 'off' for kill switch command"
+					else
+						Killswitch $2
+					fi
+					shift;;
 			-f) Fix_Permissions ;;
 			-b) Backup ;;
 			-rb) Restore ;;

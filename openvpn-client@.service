@@ -18,6 +18,7 @@ DeviceAllow=/dev/net/tun rw
 ProtectSystem=true
 ProtectHome=true
 KillMode=process
+Restart=always
 
 [Install]
 WantedBy=multi-user.target

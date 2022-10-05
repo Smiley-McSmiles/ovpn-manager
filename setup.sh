@@ -31,9 +31,17 @@ Change_variable()
 Fix_Permissions()
 {
 	Has_sudo
-	chown -Rfv root:root /etc/openvpn
-	chmod -Rfv 750 /etc/openvpn
-	chmod -Rfv ug+X /etc/openvpn
+	if id "openvpn" &>/dev/null; then
+		chown -Rfv openvpn:openvpn /etc/openvpn
+		chmod -Rfv 750 /etc/openvpn
+	elif id "nm-openvpn" &>/dev/null; then
+		chown -Rfv nm-openvpn:nm-openvpn /etc/openvpn
+		chmod -Rfv 750 /etc/openvpn
+	else
+		echo "ERROR - NO openvpn USER FOUND!!!"
+		echo "PLEASE SET UP YOUR OWN PERMISSIONS FOR"
+		echo "/etc/openvpn"
+	fi
 }
 
 Install_dependancies()
@@ -104,14 +112,11 @@ Setup()
 		echo "$accountUserName" >> /etc/openvpn/accounts/$accountFileName
 	 	echo "$accountPassWord" >> /etc/openvpn/accounts/$accountFileName
 		ls -w 1 /etc/openvpn/accounts/
-		chown -Rfv root:root /etc/openvpn/accounts
  	fi
 	Fix_Permissions
 	Disable_IPv6
 	mv ovpn.sh /bin/ovpn
-	if [ ! -f $ovpnServiceLocation ]; then
-		mv -fv openvpn-client@.service $ovpnServiceLocation
-	fi
+	mv -fv openvpn-client@.service $ovpnServiceLocation
 	chmod +x /bin/ovpn
 	ovpn -h -i
 }
