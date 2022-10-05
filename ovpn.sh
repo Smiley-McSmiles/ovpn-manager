@@ -117,7 +117,7 @@ Killswitch()
 		else
 			echo "FAILED TO ALLOW $VPN_IP! ERROR NO 'ufw' OR 'firewall-cmd' COMMAND FOUND!";
 		fi
-	elif [[ onOrOff == "off" ]]; then
+	elif [[ $onOrOff == "off" ]]; then
 		ufw default allow outgoing
 		ufw default allow incoming
 		ufw reload
