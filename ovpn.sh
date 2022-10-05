@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.3"
+version="1.0.5"
 
 Has_sudo()
 {
@@ -83,39 +83,35 @@ Killswitch()
 		VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
 		
 		if [ -x "$(command -v ufw)" ]; then
-				ufw default deny outgoing
-				ufw default deny incoming
-				ufw allow out on tun0 from any to any
-				ufw allow out from any to $VPN_IP
-				ufw allow in from any to $VPN_IP
-				
-				networkInterfaces=$(ip link show | grep ": <" | cut -d ":" -f 2 | sed "s| ||g")
-				networkInterfaces=($networkInterfaces)
-				for interface in "${networkInterfaces[@]}"; do
-					if [[ $interface == "lo" ]] || [[ $interface == "tun"* ]]; then
-						echo
-					else
-						ip link set $interface down
-						ip link set $interface up
-					fi
-				done
-				
-				ufw allow out from any to 10.0.0.0/24
-				ufw allow out from any to 172.16.0.0/24
-				ufw allow out from any to 192.168.0.0/24
-				ufw allow in from any to 10.0.0.0/24
-				ufw allow in from any to 172.16.0.0/24
-				ufw allow in from any to 192.168.0.0/24
-				ufw reload
-			else
-				ufw allow out from any to $VPN_IP
-				ufw allow in from any to $VPN_IP
-			fi
+			ufw default deny outgoing
+			ufw default deny incoming
+			ufw allow out on tun0 from any to any
+			ufw allow out from any to $VPN_IP
+			ufw allow in from any to $VPN_IP
+			
+			networkInterfaces=$(ip link show | grep ": <" | cut -d ":" -f 2 | sed "s| ||g")
+			networkInterfaces=($networkInterfaces)
+			for interface in "${networkInterfaces[@]}"; do
+				if [[ $interface == "lo" ]] || [[ $interface == "tun"* ]]; then
+					echo
+				else
+					ip link set $interface down
+					ip link set $interface up
+				fi
+			done
+			ufw allow out from any to 10.0.0.0/24
+			ufw allow out from any to 172.16.0.0/24
+			ufw allow out from any to 192.168.0.0/24
+			ufw allow in from any to 10.0.0.0/24
+			ufw allow in from any to 172.16.0.0/24
+			ufw allow in from any to 192.168.0.0/24
+			ufw reload
+			
 		elif [ -x "$(command -v firewall-cmd)" ]; then 
 			firewall-cmd --permanent --add-source=$VPN_IP
 			firewall-cmd --reload
 		else
-			echo "FAILED TO ALLOW $VPN_IP! ERROR NO 'ufw' OR 'firewall-cmd' COMMAND FOUND!";
+			echo "FAILED TO ALLOW $VPN_IP! ERROR NO 'ufw' OR 'firewall-cmd' COMMAND FOUND!"
 		fi
 	elif [[ $onOrOff == "off" ]]; then
 		ufw default allow outgoing
