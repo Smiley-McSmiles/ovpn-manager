@@ -13,7 +13,7 @@ sudo ./setup.sh
 # USAGE
 
 ```sh
-OpenVPN Manager v1.0.2
+OpenVPN Manager v1.0.3
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]

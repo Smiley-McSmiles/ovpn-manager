@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.2"
+version="1.0.3"
 
 Has_sudo()
 {
@@ -83,9 +83,6 @@ Killswitch()
 		VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
 		
 		if [ -x "$(command -v ufw)" ]; then
-			read -p "Would you like to only have traffic come in through your VPN? : [y/N] " cutTraffic
-			
-			if [[ $currentlyInstalled == [yY] ]] || [[ $currentlyInstalled == [yY][eE][sS] ]]; then
 				ufw default deny outgoing
 				ufw default deny incoming
 				ufw allow out on tun0 from any to any
