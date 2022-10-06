@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.5"
+version="1.0.6"
 
 Has_sudo()
 {
@@ -79,33 +79,64 @@ Killswitch()
 	Has_sudo
 	source $ovpnConf
 	onOrOff=$1
+
 	if [[ $onOrOff == "on" ]]; then
-		VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
-		
-		if [ -x "$(command -v ufw)" ]; then
 			ufw default deny outgoing
 			ufw default deny incoming
-			ufw allow out on tun0 from any to any
-			ufw allow out from any to $VPN_IP
-			ufw allow in from any to $VPN_IP
+			VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
+			VPN_PORT=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 3)
+			VPN_PORT_PROTO=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "proto" | cut -d " " -f 2)
+			VPN_INTERFACE=$(ifconfig | grep tun | cut -d " " -f 1)
 			
+			while [[ ! -n $VPN_INTERFACE ]]; do
+				VPN_INTERFACE=$(ifconfig | grep tun | cut -d " " -f 1)
+				sleep .5
+			done
+
+		if [ -x "$(command -v ufw)" ]; then
 			networkInterfaces=$(ip link show | grep ": <" | cut -d ":" -f 2 | sed "s| ||g")
 			networkInterfaces=($networkInterfaces)
 			for interface in "${networkInterfaces[@]}"; do
 				if [[ $interface == "lo" ]] || [[ $interface == "tun"* ]]; then
-					echo
+					echo "Skipping restart for interface $interface"
 				else
+					echo "STOPPING ALL CONNECTIONS ON INTERFACE $interface..."
 					ip link set $interface down
 					ip link set $interface up
+					echo "DONE!"
 				fi
 			done
+			sleep 2
+			
+			echo "VPN_IP=$VPN_IP"
+			echo "VPN_PORT=$VPN_PORT"
+			echo "VPN_PORT_PROTO=$VPN_PORT_PROTO"
+			echo "VPN_INTERFACE=$VPN_INTERFACE"
+			ufw allow out on $VPN_INTERFACE from any to any
+			ufw allow in on $VPN_INTERFACE from any to any
+			
+			ufw allow out to $VPN_IP port $VPN_PORT proto $VPN_PORT_PROTO
+			
+			#ufw allow out from any to $VPN_IP
+			#ufw allow in from any to $VPN_IP
+			
 			ufw allow out from any to 10.0.0.0/24
 			ufw allow out from any to 172.16.0.0/24
 			ufw allow out from any to 192.168.0.0/24
+			ufw allow out from any to 192.168.1.0/24
 			ufw allow in from any to 10.0.0.0/24
 			ufw allow in from any to 172.16.0.0/24
 			ufw allow in from any to 192.168.0.0/24
+			ufw allow in from any to 192.168.1.0/24
+			
 			ufw reload
+			
+			ovpn -r
+			
+			echo
+			echo "KILL SWITCH ENGAGED!"
+			echo "GETTING IP..."
+			dig +short myip.opendns.com @resolver1.opendns.com
 			
 		elif [ -x "$(command -v firewall-cmd)" ]; then 
 			firewall-cmd --permanent --add-source=$VPN_IP
