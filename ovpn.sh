@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.6"
+version="1.0.7"
 
 Has_sudo()
 {
@@ -44,12 +44,13 @@ Restore()
 Fix_Permissions()
 {
 	Has_sudo
+	echo "SETTING UP PERMISSIONS FOR /etc/openvpn..."
 	if id "openvpn" &>/dev/null; then
-		chown -Rfv openvpn:openvpn /etc/openvpn
-		chmod -Rfv 750 /etc/openvpn
+		chown -Rf openvpn:openvpn /etc/openvpn
+		chmod -Rf 750 /etc/openvpn
 	elif id "nm-openvpn" &>/dev/null; then
-		chown -Rfv nm-openvpn:nm-openvpn /etc/openvpn
-		chmod -Rfv 750 /etc/openvpn
+		chown -Rf nm-openvpn:nm-openvpn /etc/openvpn
+		chmod -Rf 750 /etc/openvpn
 	else
 		echo "ERROR - NO openvpn USER FOUND!!!"
 		echo "PLEASE SET UP YOUR OWN PERMISSIONS FOR"
@@ -86,10 +87,10 @@ Killswitch()
 			VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
 			VPN_PORT=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 3)
 			VPN_PORT_PROTO=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "proto" | cut -d " " -f 2)
-			VPN_INTERFACE=$(ifconfig | grep tun | cut -d " " -f 1)
+			VPN_INTERFACE=$(ifconfig | grep -o "tun"[09])
 			
 			while [[ ! -n $VPN_INTERFACE ]]; do
-				VPN_INTERFACE=$(ifconfig | grep tun | cut -d " " -f 1)
+				VPN_INTERFACE=$(ifconfig | grep -o "tun"[09])
 				sleep .5
 			done
 
@@ -136,6 +137,7 @@ Killswitch()
 			echo
 			echo "KILL SWITCH ENGAGED!"
 			echo "GETTING IP..."
+			sleep 2
 			dig +short myip.opendns.com @resolver1.opendns.com
 			
 		elif [ -x "$(command -v firewall-cmd)" ]; then 
@@ -206,7 +208,8 @@ Change_Server()
 		read -p "the version you want to install [1-$maxNumber] : " defaultVPNConnectionNumber
 		defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
 
-		if [[ ! $defaultVPNConnectionNumber == [1-$maxNumber] ]]; then
+		#if [[ ! $defaultVPNConnectionNumber == [1-$maxNumber] ]]; then
+		if (($defaultVPNConnectionNumber >= 1 && $defaultVPNConnectionNumber <= $maxNumber)); then
 			defaultVPNConnectionNumber=0
 			let warning="ERROR Please select one of the numbers provided! - Or press CTRL+C to exit..."
 		else
