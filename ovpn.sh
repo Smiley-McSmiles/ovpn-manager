@@ -217,8 +217,13 @@ Change_Server()
 			echo "defaultVPNConnection=$defaultVPNConnection" > $ovpnConf
 			Fix_Permissions
 			VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
+			VPN_PORT=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 3)
+			VPN_PORT_PROTO=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "proto" | cut -d " " -f 2)
+			VPN_INTERFACE=$(ifconfig | grep -o "tun"[09])
+
 			ufw allow out from any to $VPN_IP
 			ufw allow in from any to $VPN_IP
+			ufw allow out to $VPN_IP port $VPN_PORT proto $VPN_PORT_PROTO
 			Start_vpn
 			Enable_vpn
 		fi
