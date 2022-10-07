@@ -4,10 +4,12 @@
 ovpnConf=/etc/openvpn/ovpn.conf
 version="1.0.7"
 
+testVar=$(Has_sudo)
+
 Has_sudo()
 {
 	if [ `whoami` != root ]; then
-    echo "$USER please run this script with sudo or as root"
+    echo "$USER, please run ovpn with sudo or as root"
     return 1
     exit
   else
@@ -38,7 +40,6 @@ Restore()
 	Fix_Permissions
 	ovpn -e -s
 	echo "Complete!"
-	
 }
 
 Fix_Permissions()
@@ -60,10 +61,10 @@ Fix_Permissions()
 
 Clean_Number()
 {
-	iteration=1
 	string=$1
+	iteration=1
 	stringCount=$(echo $string | wc -c)
-	stringCount=$(($stringCount - 1)) 
+	stringCount=$(($stringCount - 1))
 	cleanedNumber=
 	while [ $iteration -le $stringCount ]; do
 		character=$(echo $string | cut -c $iteration)
@@ -79,8 +80,8 @@ Clean_Number()
 
 Clean_Letters()
 {
-	iteration=1
 	string="$1"
+	iteration=1
 	stringCount=$(echo $string | wc -c)
 	stringCount=$(($stringCount - 1))
 	letters="aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ"
@@ -96,7 +97,6 @@ Clean_Letters()
 
 	echo $cleanedLetters
 }
-
 
 Change_variable()
 {
@@ -126,13 +126,10 @@ Killswitch()
 			ufw default deny incoming
 			vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
 			VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
-			#VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
 			VPN_PORT=$(awk '/remote / {print $3}' $vpnConfFile)
 			VPN_PORT=$(Clean_Number $VPN_PORT)
-			#VPN_PORT=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 3)
 			VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
 			VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
-			#VPN_PORT_PROTO=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "proto" | cut -d " " -f 2)
 			VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 			
 			while [[ ! -n $VPN_INTERFACE ]]; do
@@ -268,7 +265,6 @@ Change_Server()
 			VPN_PORT=$(Clean_Number $VPN_PORT)
 			VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
 			VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
-			VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 
 			ufw allow out from any to $VPN_IP
 			ufw allow in from any to $VPN_IP
