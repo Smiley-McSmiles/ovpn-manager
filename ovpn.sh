@@ -58,6 +58,26 @@ Fix_Permissions()
 	fi
 }
 
+Clean_Number()
+{
+	iteration=1
+	string=$1
+	stringCount=$(echo $string | wc -c)
+	stringCount=$(($stringCount - 1)) 
+	cleanedNumber=
+	while [ $iteration -le $stringCount ]; do
+		character=$(echo $string | cut -c $iteration)
+
+		if [[ $character == [0-9] ]]; then
+			cleanedNumber=$cleanedNumber$character
+		fi
+		let iteration=$(($iteration + 1))
+	done
+
+	echo $cleanedNumber
+}
+
+
 Change_variable()
 {
 	# Change_variable varToChange newVarContent VarType sourceFile
@@ -84,13 +104,18 @@ Killswitch()
 	if [[ $onOrOff == "on" ]]; then
 			ufw default deny outgoing
 			ufw default deny incoming
-			VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
-			VPN_PORT=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 3)
-			VPN_PORT_PROTO=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "proto" | cut -d " " -f 2)
-			VPN_INTERFACE=$(ifconfig | grep -o "tun"[09])
+			vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
+			VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
+			#VPN_IP=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 2)
+			VPN_PORT=$(awk '/remote / {print $3}' $vpnConfFile)
+			VPN_PORT=$(Clean_Number $VPN_PORT)
+			#VPN_PORT=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 3)
+			VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
+			#VPN_PORT_PROTO=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "proto" | cut -d " " -f 2)
+			VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 			
 			while [[ ! -n $VPN_INTERFACE ]]; do
-				VPN_INTERFACE=$(ifconfig | grep -o "tun"[09])
+				VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 				sleep .5
 			done
 
