@@ -77,6 +77,26 @@ Clean_Number()
 	echo $cleanedNumber
 }
 
+Clean_Letters()
+{
+	iteration=1
+	string="$1"
+	stringCount=$(echo $string | wc -c)
+	stringCount=$(($stringCount - 1))
+	letters="aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ"
+	cleanedLetters=
+	while [ $iteration -le $stringCount ]; do
+		character=$(echo "$string" | cut -c $iteration)
+
+		if [[ $letters == *"$character"* ]]; then
+			cleanedLetters=$cleanedLetters$character
+		fi
+		let iteration=$(($iteration + 1))
+	done
+
+	echo $cleanedLetters
+}
+
 
 Change_variable()
 {
@@ -111,6 +131,7 @@ Killswitch()
 			VPN_PORT=$(Clean_Number $VPN_PORT)
 			#VPN_PORT=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "remote " | cut -d " " -f 3)
 			VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
+			VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
 			#VPN_PORT_PROTO=$(cat /etc/openvpn/client/$defaultVPNConnection.conf | grep "proto" | cut -d " " -f 2)
 			VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 			
