@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.8"
+version="1.0.9"
 
 Has_sudo()
 {
@@ -108,9 +108,9 @@ Change_variable()
 	varIsPresent=$(grep -o "$varToChange" $sourceFile)
 	
 	if [[ "$varToChange" == "$varIsPresent" ]]; then
-		let varIsPresent=true
+		varIsPresent=true
 	else
-		let varIsPresent=false
+		varIsPresent=false
 	fi
 	
 	if [[ ! -n $varToChange ]] || [[ ! -n $newVarContent ]]; then
@@ -119,10 +119,10 @@ Change_variable()
 	elif [[ $varType == "array" ]]; then
 		sed -i -e "s|$varToChange=.*|$varToChange=\($newVarContent\)|g" $sourceFile
 	else
-		if $verIsPresent; then
-			echo "$varToChange=$newVarContent" >> $sourceFile
-		else
+		if $varIsPresent; then
 			sed -i -e "s|$varToChange=.*|$varToChange=$newVarContent|g" $sourceFile
+		else
+			echo "$varToChange=$newVarContent" >> $sourceFile
 		fi
 	fi
 }
@@ -144,6 +144,9 @@ Killswitch()
 			VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
 			VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
 			VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
+			echo "Looking for tun interface..."
+			echo 'WARNING - If this hangs forever, OpenVPN may not be started...'
+			echo "CTRL+C to EXIT"
 			
 			while [[ ! -n $VPN_INTERFACE ]]; do
 				VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
@@ -244,10 +247,6 @@ Change_Server()
 	killSwitchEnabled=
 	if [ -f $ovpnConf ]; then
 		source $ovpnConf
-		let defaultVPNConnection=$defaultVPNConnection
-		let killSwitchEnabled=$killSwitchEnabled
-		Stop_vpn
-		Disable_vpn
 	fi
 	
 	vpnList=$(ls -1 /etc/openvpn/client/)
@@ -267,9 +266,11 @@ Change_Server()
 		cat -n $vpnListFile
 		echo "Please enter the number corresponding with"
 		read -p "the version you want to install [1-$maxNumber] : " defaultVPNConnectionNumber
-		defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
 
 		if (($defaultVPNConnectionNumber >= 1 && $defaultVPNConnectionNumber <= $maxNumber)); then
+			Stop_vpn
+			Disable_vpn
+			defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
 			rm -f $vpnListFile
 			echo "defaultVPNConnection=$defaultVPNConnection" > $ovpnConf
 			echo "killSwitchEnabled=$killSwitchEnabled" >> $ovpnConf
@@ -322,6 +323,7 @@ Start_vpn()
 	echo "Starting OpenVPN..."
 	systemctl start openvpn-client@$defaultVPNConnection.service
 	if $killSwitchEnabled; then
+	echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
 		Killswitch on
 	fi
 	echo "...OpenVPN has started"
@@ -334,6 +336,7 @@ Stop_vpn()
 	echo "Stopping OpenVPN..."
 	systemctl stop openvpn-client@$defaultVPNConnection.service
 	if $killSwitchEnabled; then
+		echo "Stopping Kill Switch, Kill Switch set to enable when OpenVPN starts"
 		Killswitch off
 		Change_variable killSwitchEnabled true bool $ovpnConf
 	fi
@@ -348,6 +351,7 @@ Restart_vpn()
 	systemctl restart openvpn-client@$defaultVPNConnection.service
 	ufw reload
 	if $killSwitchEnabled; then
+	echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
 		Killswitch on
 	fi
 	echo "...OpenVPN has restarted"
