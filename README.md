@@ -13,7 +13,7 @@ sudo ./setup.sh
 # USAGE
 
 ```sh
-OpenVPN Manager v1.0.9
+OpenVPN Manager v1.1.0
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]
@@ -28,10 +28,14 @@ COMMANDS:
 -i Import OpenVPN .ovpn file
 -k [on/off] Enable or Disable the Killswitch
 -f Fix OpenVPN permissions
--v Print OpenVPN Manager's Version
+-v Print the version OpenVPN Manager
 -b Backup OpenVPN Manager Configurations
 -rb [backup.tar] Restore OpenVPN Manager Configurations
 -h Display this help menu
+
+Kill Switch Behavior:
+- The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
+will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
+Will re-enable the Kill Switch if 'ovpn -k on'.
+
 ```
-
-

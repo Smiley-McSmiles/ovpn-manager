@@ -1,0 +1,11 @@
+[Unit]
+Description=Kill Switch - Enabled by OVPN-Manager
+After=network.target
+Documentation=man:ovpn
+
+[Service]
+ExecStart=/bin/ovpn --dev-function Killswitch_Enable
+ExecStop=/bin/ovpn --dev-function Killswitch_Disable
+
+[Install]
+WantedBy=multi-user.target
