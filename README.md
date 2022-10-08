@@ -33,11 +33,9 @@ COMMANDS:
 -rb [backup.tar] Restore OpenVPN Manager Configurations
 -h Display this help menu
 
-KIll Switch Behavior:
+Kill Switch Behavior:
 - The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
 will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
 Will re-enable the Kill Switch if 'ovpn -k on'.
 
 ```
-
-

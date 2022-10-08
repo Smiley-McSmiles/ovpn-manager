@@ -98,7 +98,7 @@ Disable_IPv6()
 Setup()
 {
 	Has_sudo
-	ovpnServiceLocation=/usr/lib/systemd/system/openvpn-client@.service
+	ovpnServiceLocation=/usr/lib/systemd/system/
 	Install_dependancies
 	echo "Press ENTER to skip"
 	read -p "Input your VPN Provider : " accountFileName
@@ -116,7 +116,14 @@ Setup()
 	Fix_Permissions
 	Disable_IPv6
 	mv ovpn.sh /bin/ovpn
-	mv -fv openvpn-client@.service $ovpnServiceLocation
+	mv -fv .services/* $ovpnServiceLocation
+	
+	if [ -x "$(command -v apt)" ] || [ -x "$(command -v pacman)" ] || [ -x "$(command -v zypper)" ]; then
+		mv -f .man-page/ovpn.1 /usr/share/man/man1/
+	elif [ -x "$(command -v dnf)" ]; then
+		mv -f .man-page/ovpn.1 /usr/local/share/man/man1/
+	fi
+
 	chmod +x /bin/ovpn
 	ovpn -h -i
 }
