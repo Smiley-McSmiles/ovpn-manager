@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.0"
+version="1.1.1"
 
 Has_sudo()
 {
