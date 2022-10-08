@@ -28,7 +28,7 @@ COMMANDS:
 -i Import OpenVPN .ovpn file
 -k [on/off] Enable or Disable the Killswitch
 -f Fix OpenVPN permissions
--v Print OpenVPN Manager's Version
+-v Print the version OpenVPN Manager
 -b Backup OpenVPN Manager Configurations
 -rb [backup.tar] Restore OpenVPN Manager Configurations
 -h Display this help menu
