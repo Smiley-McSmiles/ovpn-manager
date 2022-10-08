@@ -1,0 +1,80 @@
+." Process this file with
+." groff -man -Tascii ovpn.1
+."
+.TH OVPN - Manager
+
+.Sh NAME
+.B OVPN - Manager - A simple BASH script to install and manage OpenVPN 
+
+.SH VERSION
+.B OVPN - Manager - v1.1.0
+
+.SH DESCRIPTION
+.B OVPN - Manager
+A simple BASH script to install and manage OpenVPN
+
+.SH USAGE
+.B SYNTAX
+- ovpn -[COMMAND] [PARAMETER]
+.TP
+.SS COMMANDS
+.TP
+.B -s Start OpenVPN
+.TP
+.B -S Stop OpenVPN
+.TP
+.B -t Status of OpenVPN
+.TP
+.B -e Enable OpenVPN
+.TP
+.B -d Disable OpenVPN
+.TP
+.B -r Restart OpenVPN
+.TP
+.B -c Change OpenVPN Connection
+.TP
+.B -i Import OpenVPN .ovpn file
+.TP
+.B -k [on/off] Enable or Disable the Killswitch
+.TP
+.B -f Fix OpenVPN permissions
+.TP
+.B -v Print OpenVPN Manager's Version
+.TP
+.B-b Backup OpenVPN Manager Configurations
+.TP
+.B -rb [backup.tar] Restore OpenVPN Manager Configurations
+.TP
+.B -h Display this help menu
+.TP
+
+.B Kill Switch Behavior:
+.B - The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
+.B will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
+.B Will re-enable the Kill Switch if 'ovpn -k on'.
+.TP
+
+.SH EXAMPLE
+.TP
+.B To Enable, Start, and Enable the Kill Switch simpley run :
+.TP
+.B 'sudo ovpn -e -s -k on'
+
+.SH FILES
+.TP
+.I
+/bin/ovpn
+.TP
+.I
+/etc/openvpn/ovpn.conf
+.TP
+
+.SH COPYRIGHT
+.PP
+Copyright 2022 Smiley McSmiles & XeN. All rights reserved
+https://www.github.com/Smiley-McSmiles/ovpn-manager
+
+.SH CREDITS
+.PP
+OVPN-Manager and this man page was created by Smiley McSmiles <SmileyMcSmiles@Proton.me>
+
