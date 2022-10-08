@@ -13,7 +13,7 @@ sudo ./setup.sh
 # USAGE
 
 ```sh
-OpenVPN Manager v1.0.9
+OpenVPN Manager v1.1.0
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]
@@ -32,6 +32,12 @@ COMMANDS:
 -b Backup OpenVPN Manager Configurations
 -rb [backup.tar] Restore OpenVPN Manager Configurations
 -h Display this help menu
+
+KIll Switch Behavior:
+- The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
+will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
+Will re-enable the Kill Switch if 'ovpn -k on'.
+
 ```
 
 

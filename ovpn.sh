@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.9"
+version="1.1.0"
 
 Has_sudo()
 {
@@ -399,6 +399,11 @@ COMMANDS:
 -b Backup OpenVPN Manager Configurations
 -rb [backup.tar] Restore OpenVPN Manager Configurations
 -h Display this help menu
+
+KIll Switch Behavior:
+- The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
+will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
+Will re-enable the Kill Switch if 'ovpn -k on'.
 "
 }
 
