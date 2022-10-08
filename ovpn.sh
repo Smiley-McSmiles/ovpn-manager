@@ -2,9 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.0.7"
-
-testVar=$(Has_sudo)
+version="1.0.8"
 
 Has_sudo()
 {
@@ -49,9 +47,11 @@ Fix_Permissions()
 	if id "openvpn" &>/dev/null; then
 		chown -Rf openvpn:openvpn /etc/openvpn
 		chmod -Rf 750 /etc/openvpn
+		echo "...DONE!"
 	elif id "nm-openvpn" &>/dev/null; then
 		chown -Rf nm-openvpn:nm-openvpn /etc/openvpn
 		chmod -Rf 750 /etc/openvpn
+		echo "...DONE!"
 	else
 		echo "ERROR - NO openvpn USER FOUND!!!"
 		echo "PLEASE SET UP YOUR OWN PERMISSIONS FOR"
@@ -100,18 +100,30 @@ Clean_Letters()
 
 Change_variable()
 {
-	# Change_variable varToChange newVarContent VarType sourceFile
+	# Change_variable varToChange newVarContent VarType sourceFile ## Note varToChange does not have a $
 	varToChange=$1
 	newVarContent=$2
 	varType=$3
 	sourceFile=$4
+	varIsPresent=$(grep -o "$varToChange" $sourceFile)
+	
+	if [[ "$varToChange" == "$varIsPresent" ]]; then
+		let varIsPresent=true
+	else
+		let varIsPresent=false
+	fi
+	
 	if [[ ! -n $varToChange ]] || [[ ! -n $newVarContent ]]; then
 		echo "Function Change_variable requires 2 parameters: varToChange newVarContent"
 		exit
 	elif [[ $varType == "array" ]]; then
 		sed -i -e "s|$varToChange=.*|$varToChange=\($newVarContent\)|g" $sourceFile
 	else
-		sed -i -e "s|$varToChange=.*|$varToChange=$newVarContent|g" $sourceFile
+		if $verIsPresent; then
+			echo "$varToChange=$newVarContent" >> $sourceFile
+		else
+			sed -i -e "s|$varToChange=.*|$varToChange=$newVarContent|g" $sourceFile
+		fi
 	fi
 }
 
@@ -122,6 +134,7 @@ Killswitch()
 	onOrOff=$1
 
 	if [[ $onOrOff == "on" ]]; then
+			Change_variable killSwitchEnabled true bool $ovpnConf
 			ufw default deny outgoing
 			ufw default deny incoming
 			vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
@@ -175,13 +188,15 @@ Killswitch()
 			
 			ufw reload
 			
-			ovpn -r
+			#ovpn -r
+			systemctl restart openvpn-client@$defaultVPNConnection.service
 			
 			echo
 			echo "KILL SWITCH ENGAGED!"
 			echo "GETTING IP..."
 			sleep 2
 			dig +short myip.opendns.com @resolver1.opendns.com
+			echo
 			
 		elif [ -x "$(command -v firewall-cmd)" ]; then 
 			firewall-cmd --permanent --add-source=$VPN_IP
@@ -190,6 +205,7 @@ Killswitch()
 			echo "FAILED TO ALLOW $VPN_IP! ERROR NO 'ufw' OR 'firewall-cmd' COMMAND FOUND!"
 		fi
 	elif [[ $onOrOff == "off" ]]; then
+		Change_variable killSwitchEnabled false bool $ovpnConf
 		ufw default allow outgoing
 		ufw default allow incoming
 		ufw reload
@@ -225,9 +241,11 @@ Change_Server()
 {
 	Has_sudo
 	defaultVPNConnection=
+	killSwitchEnabled=
 	if [ -f $ovpnConf ]; then
 		source $ovpnConf
 		let defaultVPNConnection=$defaultVPNConnection
+		let killSwitchEnabled=$killSwitchEnabled
 		Stop_vpn
 		Disable_vpn
 	fi
@@ -251,26 +269,27 @@ Change_Server()
 		read -p "the version you want to install [1-$maxNumber] : " defaultVPNConnectionNumber
 		defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
 
-		#if [[ ! $defaultVPNConnectionNumber == [1-$maxNumber] ]]; then
 		if (($defaultVPNConnectionNumber >= 1 && $defaultVPNConnectionNumber <= $maxNumber)); then
-			defaultVPNConnectionNumber=0
-			let warning="ERROR Please select one of the numbers provided! - Or press CTRL+C to exit..."
-		else
 			rm -f $vpnListFile
 			echo "defaultVPNConnection=$defaultVPNConnection" > $ovpnConf
+			echo "killSwitchEnabled=$killSwitchEnabled" >> $ovpnConf
 			Fix_Permissions
+
 			vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
 			VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
 			VPN_PORT=$(awk '/remote / {print $3}' $vpnConfFile)
 			VPN_PORT=$(Clean_Number $VPN_PORT)
 			VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
 			VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
-
 			ufw allow out from any to $VPN_IP
 			ufw allow in from any to $VPN_IP
 			ufw allow out to $VPN_IP port $VPN_PORT proto $VPN_PORT_PROTO
-			Start_vpn
 			Enable_vpn
+			Start_vpn
+			
+		else
+			defaultVPNConnectionNumber=0
+			let warning="ERROR Please select one of the numbers provided! - Or press CTRL+C to exit..."
 		fi
 	done
 }
@@ -279,42 +298,78 @@ Enable_vpn()
 {
 	Has_sudo
 	source $ovpnConf
+	echo "Enabling OpenVPN..."
 	systemctl enable openvpn-client@$defaultVPNConnection.service
+	echo "...OpenVPN Enabled on start-up"
 }
 
 Disable_vpn()
 {
 	Has_sudo
 	source $ovpnConf
+	echo "Disabling OpenVPN..."
 	systemctl disable openvpn-client@$defaultVPNConnection.service
+	if $killSwitchEnabled; then
+		echo 'CAUTION - Kill Switch is ENABLED, on next reboot, please run: "sudo ovpn -k off"'
+	fi
+	echo "...OpenVPN Disabled on start-up"
 }
 
 Start_vpn()
 {
 	Has_sudo
 	source $ovpnConf
+	echo "Starting OpenVPN..."
 	systemctl start openvpn-client@$defaultVPNConnection.service
+	if $killSwitchEnabled; then
+		Killswitch on
+	fi
+	echo "...OpenVPN has started"
 }
 
 Stop_vpn()
 {
 	Has_sudo
 	source $ovpnConf
+	echo "Stopping OpenVPN..."
 	systemctl stop openvpn-client@$defaultVPNConnection.service
+	if $killSwitchEnabled; then
+		Killswitch off
+		Change_variable killSwitchEnabled true bool $ovpnConf
+	fi
+	echo "...OpenVPN has stopped"
 }
 
 Restart_vpn()
 {
 	Has_sudo
 	source $ovpnConf
+	echo "Restarting OpenVPN..."
 	systemctl restart openvpn-client@$defaultVPNConnection.service
 	ufw reload
+	if $killSwitchEnabled; then
+		Killswitch on
+	fi
+	echo "...OpenVPN has restarted"
 }
 
 Status_vpn()
 {
 	Has_sudo
 	source $ovpnConf
+	echo "OVPN - Manager:"
+	echo "---------------"
+	if $killSwitchEnabled; then
+		echo
+		echo "Kill Switch : ENABLED"
+		echo
+		echo "---------------"
+	else
+		echo
+		echo "Kill Switch : DISABLED"
+		echo
+		echo "---------------"
+	fi
 	systemctl status openvpn-client@$defaultVPNConnection.service
 }
 
