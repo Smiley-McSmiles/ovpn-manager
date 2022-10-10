@@ -133,7 +133,7 @@ Setup()
 	fi
 
 	chmod +x /bin/ovpn
-	ovpn -h -i
+	ovpn -h
 }
 
 Restore()

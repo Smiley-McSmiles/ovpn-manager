@@ -7,6 +7,7 @@ version="1.1.1"
 Has_sudo()
 {
 	if [ `whoami` != root ]; then
+    echo "$USER, please run ovpn with sudo or as root"
     return 1
     exit
   else
@@ -14,25 +15,9 @@ Has_sudo()
 	fi
 }
 
-Countdown()
-{
-	_time=$1
-	while [ $_time -gt 0 ]; do
-		printf "\r $_time seconds"
-		_time=$(($_time - 1))
-		sleep 1
-	done
-	printf "\n Done!"
-	printf "\n"
-}
-
 Backup()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	backupDir=/etc/openvpn
 	fileName=ovpn-manager-backup.tar
 	tar cf $PWD/$fileName $backupDir
@@ -42,11 +27,7 @@ Backup()
 
 Restore()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	if [ ! -f $1 ]; then
 		echo "ERROR- $1 IS NOT A FILE. TRY AGAIN!"
 		exit
@@ -61,11 +42,7 @@ Restore()
 
 Fix_Permissions()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	echo "SETTING UP PERMISSIONS FOR /etc/openvpn..."
 	if id "openvpn" &>/dev/null; then
 		chown -Rf openvpn:openvpn /etc/openvpn
@@ -152,11 +129,7 @@ Change_variable()
 
 Killswitch()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	onOrOff=$1
 
 	if [[ $onOrOff == "on" ]]; then
@@ -169,15 +142,9 @@ Killswitch()
 
 Killswitch_Enable()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	source $ovpnConf
 	Change_variable killSwitchEnabled true bool $ovpnConf
-	systemctl enable --now ufw
-	ufw enable
 	ufw default deny outgoing
 	ufw default deny incoming
 	vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
@@ -237,7 +204,14 @@ Killswitch_Enable()
 		#ovpn -r
 		systemctl restart openvpn-client@$defaultVPNConnection.service
 		
+		echo
+		echo "GETTING IP..."
+		sleep 2
+		# curl ip.changeip.com
+		# wget -qO- ipinfo.io/ip
+		dig +short myip.opendns.com @resolver1.opendns.com
 		echo "KILL SWITCH ENGAGED!"
+		echo
 		
 	elif [ -x "$(command -v firewall-cmd)" ]; then 
 		firewall-cmd --permanent --add-source=$VPN_IP
@@ -247,105 +221,22 @@ Killswitch_Enable()
 	fi
 	
 	while true; do
-		_iteration=1
-		infoIP=
-		publicIP=
-		cityIP=
-		regionIP=
-		countryIP=
-		
-		sleep 5
-		
-		isConnected=$(ping -c 1 -q ipinfo.io >&/dev/null; echo $?)
-		if [[ $isConnected == "0" ]]; then
-			isConnected=true
-			infoIP=$(curl -s ipinfo.io)
-			publicIP=$(echo "$infoIP" | grep \"ip\" | awk -F'"' '{ print $4 }')
-			cityIP=$(echo "$infoIP" | grep city | awk -F'"' '{ print $4 }')
-			regionIP=$(echo "$infoIP" | grep region | awk -F'"' '{ print $4 }')
-			countryIP=$(echo "$infoIP" | grep country | awk -F'"' '{ print $4 }')
-
-		else
-			isConnected=false
-		fi
-		
-		while ! $isConnected; do
-			_retriesLeft=$(( 5 - $_iteration ))
-			echo "Retries left: $_retriesLeft"
-			echo "Cannot connect to the internet."
-			
-			_iteration=$(($_iteration + 1))
-			if [ $_iteration -ge 5 ]; then
-				echo "Restarting OpenVPN in 5 seconds"
-				sleep 5
-				ovpn -r
-				exit
-			fi
-			
-			sleep 2
-			#publicIP=$(wget -qO- ipinfo.io/ip)
-			isConnected=$(ping -c 1 -q ipinfo.io >&/dev/null; echo $?)
-			if [[ $isConnected == "0" ]]; then
-				isConnected=true
-			else
-				isConnected=false
-			fi
-		done
-
-		
-		echo "----------------------------------"
-		echo " ENTRY IP --> $VPN_IP"
-		echo " EXIT IP  --> $publicIP"
-		echo " REGION   --> $regionIP"
-		echo " COUNTRY  --> $countryIP"
-		echo " CITY     --> $cityIP"
-		echo " Status check interval: 30 seconds"
-
-		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
-		if [[ ! -n $VPN_INTERFACE ]]; then
-			echo "tun interface not found, restarting OpenVPN..."
-			ovpn -r
-			exit
-		fi
-		
 		sleep 30
 	done
 }
 
 Killswitch_Disable()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	ufw default allow outgoing
 	ufw default allow incoming
 	ufw reload
-	echo
-	echo "GETTING IP..."
-	sleep 2
-	# curl ip.changeip.com
-	# wget -qO- ipinfo.io/ip
-	publicIp=$(dig +short myip.opendns.com @resolver1.opendns.com)
-	echo "Public IP --> $publicIP"
 	echo "KILL SWITCH STOPPED"
-	echo
-}
-
-Killswitch_Reload()
-{
-	Killswitch_Disable
-	Killswitch_Enable
 }
 
 Import_ovpn()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	ovpnFile=
 	warning=""
 	if [ -f $1 ]; then
@@ -370,11 +261,7 @@ Import_ovpn()
 
 Change_Server()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	defaultVPNConnection=
 	killSwitchEnabled=
 	if [ -f $ovpnConf ]; then
@@ -429,11 +316,7 @@ Change_Server()
 
 Enable_vpn()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	source $ovpnConf
 	echo "Enabling OpenVPN..."
 	systemctl enable openvpn-client@$defaultVPNConnection.service
@@ -447,12 +330,8 @@ Enable_vpn()
 
 Disable_vpn()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
-source $ovpnConf
+	Has_sudo
+	source $ovpnConf
 	echo "Disabling OpenVPN..."
 	systemctl disable openvpn-client@$defaultVPNConnection.service
 	if $killSwitchEnabled; then
@@ -465,11 +344,7 @@ source $ovpnConf
 
 Start_vpn()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	source $ovpnConf
 	echo "Starting OpenVPN..."
 	systemctl start openvpn-client@$defaultVPNConnection.service
@@ -483,11 +358,7 @@ Start_vpn()
 
 Stop_vpn()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-
+	Has_sudo
 	source $ovpnConf
 	echo "Stopping OpenVPN..."
 	systemctl stop openvpn-client@$defaultVPNConnection.service
@@ -502,11 +373,7 @@ Stop_vpn()
 
 Restart_vpn()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-	
+	Has_sudo
 	source $ovpnConf
 	echo "Restarting OpenVPN..."
 	systemctl restart openvpn-client@$defaultVPNConnection.service
@@ -514,19 +381,14 @@ Restart_vpn()
 	if $killSwitchEnabled; then
 	echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
 		#Killswitch on
-		systemctl enable killswitch.service
-		systemctl restart killswitch.service
+		systemctl enable --now killswitch.service
 	fi
 	echo "...OpenVPN has restarted"
 }
 
 Status_vpn()
 {
-	if ! Has_sudo; then
-	echo "$USER, please run ovpn with sudo or as root"
-		exit
-	fi
-	
+	Has_sudo
 	source $ovpnConf
 	systemctl status openvpn-client@$defaultVPNConnection.service
 	echo
@@ -561,8 +423,6 @@ Kill Switch Behavior:
 - The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
 will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
 Will re-enable the Kill Switch if 'ovpn -k on'.
-
-See 'man ovpn' for more details.
 "
 }
 
