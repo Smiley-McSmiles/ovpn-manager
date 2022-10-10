@@ -116,7 +116,15 @@ Setup()
 	Fix_Permissions
 	Disable_IPv6
 	mv ovpn.sh /bin/ovpn
+	ln -s /bin/ovpn /usr/local/bin/ovpn
 	mv -fv .services/* $ovpnServiceLocation
+	chown -Rf root:root $ovpnServiceLocation
+	
+	if [ -x "$(command -v sestatus)" ]; then
+		/sbin/restorecon -v /usr/lib/systemd/system/openvpn-client@.service
+		/sbin/restorecon -v /usr/lib/systemd/system/killswitch.service
+		/sbin/restorecon -v /usr/bin/ovpn
+	fi
 	
 	if [ -x "$(command -v apt)" ] || [ -x "$(command -v pacman)" ] || [ -x "$(command -v zypper)" ]; then
 		mv -f .man-page/ovpn.1 /usr/share/man/man1/
@@ -125,7 +133,7 @@ Setup()
 	fi
 
 	chmod +x /bin/ovpn
-	ovpn -h -i
+	ovpn -h
 }
 
 Restore()
