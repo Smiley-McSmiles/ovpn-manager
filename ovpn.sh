@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.1"
+version="1.1.2"
 
 Has_sudo()
 {
@@ -189,11 +189,20 @@ Killswitch_Enable()
 	VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 	echo "Looking for tun interface..."
 	echo 'WARNING - If this hangs forever, OpenVPN may not be started...'
-	echo "CTRL+C to EXIT"
 	
+	_iteration=1
 	while [[ ! -n $VPN_INTERFACE ]]; do
 		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
-		sleep .5
+		sleep 2
+		echo "...Connection attempt $_iteration"
+		_iteration=$(($_iteration + 1))
+		if [ $_iteration -ge 15 ]; then
+			echo "Restarting OpenVPN in 5 seconds"
+			sleep 5
+			ovpn -r
+			exit
+		fi
+
 	done
 
 	if [ -x "$(command -v ufw)" ]; then
@@ -578,12 +587,14 @@ if [[ -n "$1" ]]; then
 			-d) Disable_vpn ;;
 			-r) Restart_vpn ;;
 			-c) Change_Server ;;
-			-i) if [ -f $2 ]; then
+			-i) while [[ ! $2 == *".ovpn" ]] && [[ ! $2 == "-"* ]]; do
+						echo "$2 is not a .ovpn file..."
+					done
+
+					while [[ $2 == *".ovpn" ]]; do
 						Import_ovpn $2
 						shift
-					else
-						Import_ovpn
-					fi ;;
+					done ;;
 			-k) if [ ! -n $2 ]; then
 						echo "Please input 'on' or 'off' for kill switch command"
 					else
@@ -592,7 +603,9 @@ if [[ -n "$1" ]]; then
 					shift;;
 			-f) Fix_Permissions ;;
 			-b) Backup ;;
-			-rb) Restore ;;
+			-rb) Restore $2
+					shift ;;
+			-v) echo OpenVPN - Manager v$version;;
 			--dev-function)
 					$2
 					shift ;;
