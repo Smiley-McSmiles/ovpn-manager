@@ -1,4 +1,7 @@
-# INSTALL INSTRUCTIONS
+# DESCRIPTION
+OVPN-Manager is for the client only. Import and manage your .ovpn connections. Switch between them and enable a kill switch to prevent leaky connections.
+
+## INSTALL/UPDATE INSTRUCTIONS
 
 ```sh
 git clone https://github.com/Smiley-McSmiles/ovpn-manager
@@ -7,13 +10,10 @@ chmod +x setup.sh
 sudo ./setup.sh
 ```
 
-# UPDATE INSTRUCTIONS
-`sudo wget -O /bin/ovpn https://raw.githubusercontent.com/Smiley-McSmiles/ovpn-manager/main/ovpn.sh; sudo chmod +x /bin/ovpn`
-
-# USAGE
+## USAGE
 
 ```sh
-OpenVPN Manager v1.1.1
+OpenVPN Manager v1.1.2
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]
