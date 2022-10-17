@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.2"
+version="1.1.3"
 
 Has_sudo()
 {
@@ -160,10 +160,14 @@ Killswitch()
 	onOrOff=$1
 
 	if [[ $onOrOff == "on" ]]; then
+		echo "Enabling Kill Switch..."
 		systemctl enable --now killswitch.service
+		echo "...DONE!"
 	elif [[ $onOrOff == "off" ]]; then
+		echo "Disabling Kill Switch..."
 		systemctl disable --now killswitch.service
 		Change_variable killSwitchEnabled false bool $ovpnConf
+		echo "...DONE!"
 	fi
 }
 
@@ -175,6 +179,7 @@ Killswitch_Enable()
 	fi
 
 	source $ovpnConf
+	echo "Enabling Kill Switch..."
 	Change_variable killSwitchEnabled true bool $ovpnConf
 	systemctl enable --now ufw
 	ufw enable
@@ -194,15 +199,14 @@ Killswitch_Enable()
 	while [[ ! -n $VPN_INTERFACE ]]; do
 		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 		sleep 2
-		echo "...Connection attempt $_iteration"
+		echo "...Connection attempt [$_iteration/10]"
 		_iteration=$(($_iteration + 1))
-		if [ $_iteration -ge 15 ]; then
+		if [ $_iteration -ge 10 ]; then
 			echo "Restarting OpenVPN in 5 seconds"
 			sleep 5
 			ovpn -r
-			exit
+			_iteration=1
 		fi
-
 	done
 
 	if [ -x "$(command -v ufw)" ]; then
@@ -229,8 +233,8 @@ Killswitch_Enable()
 		
 		ufw allow out to $VPN_IP port $VPN_PORT proto $VPN_PORT_PROTO
 		
-		#ufw allow out from any to $VPN_IP
-		#ufw allow in from any to $VPN_IP
+		# ufw allow out from any to $VPN_IP
+		# ufw allow in from any to $VPN_IP
 		
 		ufw allow out from any to 10.0.0.0/24
 		ufw allow out from any to 172.16.0.0/24
@@ -243,8 +247,8 @@ Killswitch_Enable()
 		
 		ufw reload
 		
-		#ovpn -r
-		systemctl restart openvpn-client@$defaultVPNConnection.service
+		ovpn -r
+		# systemctl restart openvpn-client@$defaultVPNConnection.service
 		
 		echo "KILL SWITCH ENGAGED!"
 		
@@ -288,7 +292,6 @@ Killswitch_Enable()
 				echo "Restarting OpenVPN in 5 seconds"
 				sleep 5
 				ovpn -r
-				exit
 			fi
 			
 			sleep 2
@@ -300,8 +303,10 @@ Killswitch_Enable()
 				isConnected=false
 			fi
 		done
-
 		
+		source $ovpnConf
+		vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
+		VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
 		echo "----------------------------------"
 		echo " ENTRY IP --> $VPN_IP"
 		echo " EXIT IP  --> $publicIP"
@@ -314,7 +319,6 @@ Killswitch_Enable()
 		if [[ ! -n $VPN_INTERFACE ]]; then
 			echo "tun interface not found, restarting OpenVPN..."
 			ovpn -r
-			exit
 		fi
 		
 		sleep 30
@@ -411,6 +415,9 @@ Change_Server()
 		if (($defaultVPNConnectionNumber >= 1 && $defaultVPNConnectionNumber <= $maxNumber)); then
 			Stop_vpn
 			Disable_vpn
+			sed "/$VPN_IP_OLD/d" /etc/ufw/user.rules > /tmp/user.rules
+			mv -f /tmp/user.rules /etc/ufw/user.rules
+			chown -f root:root /etc/ufw/user.rules
 			defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
 			rm -f $vpnListFile
 			echo "defaultVPNConnection=$defaultVPNConnection" > $ovpnConf
@@ -423,9 +430,14 @@ Change_Server()
 			VPN_PORT=$(Clean_Number $VPN_PORT)
 			VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
 			VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
+			echo "VPN_IP_OLD=$VPN_IP" >> $ovpnConf
+			# echo "VPN_PORT_OLD=$VPN_PORT" >> $ovpnConf
+			# echo "VPN_PORT_PROTO_OLD=$VPN_PORT_PROTO" >> $ovpnConf
+
 			ufw allow out from any to $VPN_IP
 			ufw allow in from any to $VPN_IP
 			ufw allow out to $VPN_IP port $VPN_PORT proto $VPN_PORT_PROTO
+			ufw reload
 			Enable_vpn
 			Start_vpn
 			
@@ -447,11 +459,11 @@ Enable_vpn()
 	echo "Enabling OpenVPN..."
 	systemctl enable openvpn-client@$defaultVPNConnection.service
 	echo "...OpenVPN Enabled on start-up"
-	if $killSwitchEnabled; then
-		#echo 'CAUTION - Kill Switch is ENABLED, on next reboot, please run: "sudo ovpn -k off"'
-		echo "Kill Switch enabled on next system start"
-		systemctl enable killswitch.service
-	fi
+	#if $killSwitchEnabled; then
+		# echo 'CAUTION - Kill Switch is ENABLED, on next reboot, please run: "sudo ovpn -k off"'
+		# echo "Kill Switch enabled on next system start"
+		# systemctl enable killswitch.service
+	#fi
 }
 
 Disable_vpn()
@@ -465,9 +477,10 @@ source $ovpnConf
 	echo "Disabling OpenVPN..."
 	systemctl disable openvpn-client@$defaultVPNConnection.service
 	if $killSwitchEnabled; then
-		#echo 'CAUTION - Kill Switch is ENABLED, on next reboot, please run: "sudo ovpn -k off"'
-		echo "CAUTION - Disabling killswitch on next system start up."
-		systemctl disable killswitch.service
+		echo "WARNING - Kill Switched is enabled, you will have no connection to the internet."
+		# echo 'CAUTION - Kill Switch is ENABLED, on next reboot, please run: "sudo ovpn -k off"'
+		# echo "CAUTION - Disabling killswitch on next system start up."
+		# systemctl disable killswitch.service
 	fi
 	echo "...OpenVPN Disabled on start-up"
 }
@@ -482,11 +495,11 @@ Start_vpn()
 	source $ovpnConf
 	echo "Starting OpenVPN..."
 	systemctl start openvpn-client@$defaultVPNConnection.service
-	if $killSwitchEnabled; then
-	echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
-		#Killswitch on
-		systemctl start killswitch.service
-	fi
+	#if $killSwitchEnabled; then
+		# echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
+		# Killswitch on
+		# systemctl start killswitch.service
+	#fi
 	echo "...OpenVPN has started"
 }
 
@@ -501,10 +514,11 @@ Stop_vpn()
 	echo "Stopping OpenVPN..."
 	systemctl stop openvpn-client@$defaultVPNConnection.service
 	if $killSwitchEnabled; then
-		echo "Stopping Kill Switch, Kill Switch set to enable when OpenVPN starts"
-		#Killswitch off
-		systemctl stop killswitch.service
-		Change_variable killSwitchEnabled true bool $ovpnConf
+		echo "WARNING - Kill Switched is enabled, you will have no connection to the internet."
+		# echo "Stopping Kill Switch, Kill Switch set to enable when OpenVPN starts"
+		# Killswitch off
+		# systemctl stop killswitch.service
+		# Change_variable killSwitchEnabled true bool $ovpnConf
 	fi
 	echo "...OpenVPN has stopped"
 }
@@ -520,12 +534,12 @@ Restart_vpn()
 	echo "Restarting OpenVPN..."
 	systemctl restart openvpn-client@$defaultVPNConnection.service
 	ufw reload
-	if $killSwitchEnabled; then
-	echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
-		#Killswitch on
-		systemctl enable killswitch.service
-		systemctl restart killswitch.service
-	fi
+	#if $killSwitchEnabled; then
+		# echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
+		# Killswitch on
+		# systemctl enable killswitch.service
+		# systemctl restart killswitch.service
+	#fi
 	echo "...OpenVPN has restarted"
 }
 
@@ -567,9 +581,10 @@ COMMANDS:
 -h Display this help menu
 
 Kill Switch Behavior:
-- The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
-will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
-Will re-enable the Kill Switch if 'ovpn -k on'.
+- The Kill Switch is manually turned on or off. Once enabled, if the connection
+to your OpenVPN server is lost, there will be no connection to the internet.
+However, when the Kill Switch is enabled, and there is no connection to the internet,
+The Kill Switch will restart the OpenVPN systemd service to try and re-establish a conneciton.
 
 See 'man ovpn' for more details.
 "
