@@ -13,7 +13,7 @@ sudo ./setup.sh
 ## USAGE
 
 ```sh
-OpenVPN Manager v1.1.2
+OpenVPN Manager v1.1.3
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]
@@ -34,8 +34,9 @@ COMMANDS:
 -h Display this help menu
 
 Kill Switch Behavior:
-- The Kill Switch is automatic once enabled. Running 'ovpn -S' when 'ovpn -k on'
-will allow connections outside of the 'tun' interface. Then running 'ovpn -s'
-Will re-enable the Kill Switch if 'ovpn -k on'.
+- The Kill Switch is manually turned on or off. Once enabled, if the connection
+to your OpenVPN server is lost, there will be no connection to the internet.
+However, when the Kill Switch is enabled, and there is no connection to the internet,
+The Kill Switch will restart the OpenVPN systemd service to try and re-establish a conneciton.
 
 ```
