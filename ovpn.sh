@@ -610,7 +610,7 @@ Start_vpn()
 
 	source $ovpnConf
 	echo "Starting OpenVPN..."
-	Set_service ystemctl start openvpn-client@$defaultVPNConnection.service
+	Set_Service start openvpn-client@$defaultVPNConnection.service
 	#if $killSwitchEnabled; then
 		# echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
 		# Killswitch on
