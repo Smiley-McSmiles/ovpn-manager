@@ -1,0 +1,4 @@
+#!/bin/bash
+source /etc/openvpn/ovpn.conf
+
+exec openvpn --config /etc/openvpn/client/$defaultVPNConnection.conf | tee /var/log/openvpn.log
