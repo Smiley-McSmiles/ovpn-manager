@@ -115,7 +115,7 @@ Set_Service()
 		enable)
 			if $_isRunit; then
 				unlink $_serviceActiveDir/$_service
-				ln -s $_serviceStorageDir/$_service $_serviceActiveDir
+				ln -s $_serviceStorageDir/$_service $_serviceActiveDir/
 			elif $_isSystemd; then
 				systemctl enable $_service
 			fi ;;
