@@ -1,0 +1,4 @@
+#!/bin/bash
+
+exec /bin/ovpn --dev-function Killswitch_Disable
+killall -SIGINT openvpn
