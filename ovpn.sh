@@ -101,7 +101,6 @@ Set_Service()
 		fi
 	elif [ -x "$(command -v systemctl)" ]; then
 		_isSystemd=true
-		echo "Delete Me 4"
 	else
 		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
 		exit
