@@ -1,4 +1,0 @@
-#!/bin/bash
-
-killall -SIGINT openvpn
-rm -f /var/log/openvpn.log
