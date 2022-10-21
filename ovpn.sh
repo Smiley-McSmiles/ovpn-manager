@@ -72,12 +72,85 @@ Log()
 	fi
 
 	echo "$_date $_errorMessage" >> $_logFile
+	echo "$_date $_errorMessage"
 	chown -f root:root $_logFile
 	chmod -f 770 $_logFile
 
 	if [ $_logFileLines -ge 1000 ]; then
 		sed -i '1d' $_logFile
 	fi
+}
+
+Set_Service()
+{
+	# Example :  'Set_Service enable|disable|start|stop|restart|status <servcie>'
+	_opetation=$1
+	_service=$2
+	_serviceStorageDir=
+	_serviceActiveDir=
+	_isSystemd=false
+	_isRunit=false
+
+	if [ -x "$(command -v sv)" ]; then
+		_isRunit=true
+		if [[ $_service == *"@"* ]]; then
+			_service=$(echo $_service | cut -d "@" -f 1)
+		fi
+	elif [ -x "$(command -v systemctl)" ]; then
+		_isSystemd=true
+	else
+		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
+		exit
+	fi
+
+	if [ -d /etc/sv ]; then # Void Linux - Runit
+		_serviceStorageDir=/etc/sv
+		_serviceActiveDir=/var/service/
+	elif [ -d /etc/runit/sv ]; then # Artix Linux - Runit
+		_serviceStorageDir=/etc/runit/sv
+		_serviceActiveDir=/var/service/
+	fi
+
+	case "$_operation" in
+		enable)
+			if $_isRunit; then
+				unlink $_serviceActiveDir/$_service
+				ln -s $_serviceStorageDir/$_service $_serviceActiveDir
+			elif $_isSystemd; then
+				systemctl enable $_service
+			fi ;;
+		disable)
+			if $_isRunit; then
+				touch $_serviceActiveDir/$_service/down
+			elif $_isSystemd; then
+				systemctl disable $_service
+			fi ;;
+		start)
+			if $_isRunit; then
+				sv up $_service
+			elif $_isSystemd; then
+				systemctl start $_service
+			fi ;;
+		stop)
+			if $_isRunit; then
+				sv down $_service
+			elif $_isSystemd; then
+				systemctl stop $_service
+			fi ;;
+		restart)
+			if $_isRunit; then
+				sv down $_service
+				sv up $_service
+			elif $_isSystemd; then
+				systemctl restart $_service
+			fi ;;
+		status)
+			if $_isRunit; then
+				sv status $_service
+			elif $_isSystemd; then
+				systemctl status $_service
+			fi ;;
+	esac
 }
 
 Fix_Permissions()
@@ -183,11 +256,13 @@ Killswitch()
 
 	if [[ $onOrOff == "on" ]]; then
 		echo "Enabling Kill Switch..."
-		systemctl enable --now killswitch.service
+		Set_Service enable killswitch.service
+		Set_Service start killswitch.service
 		echo "...DONE!"
 	elif [[ $onOrOff == "off" ]]; then
 		echo "Disabling Kill Switch..."
-		systemctl disable --now killswitch.service
+		Set_Service disable killswitch.service
+		Set_Service stop killswitch.service
 		Change_variable killSwitchEnabled false bool $ovpnConf
 		echo "...DONE!"
 	fi
@@ -203,7 +278,8 @@ Killswitch_Enable()
 	source $ovpnConf
 	echo "Enabling Kill Switch..."
 	Change_variable killSwitchEnabled true bool $ovpnConf
-	systemctl enable --now ufw
+	Set_Service enable ufw
+	Set_Service start ufw
 	ufw enable
 	ufw default deny outgoing
 	ufw default deny incoming
@@ -297,11 +373,12 @@ Killswitch_Enable()
 		isConnected=$(ping -c 1 -q ipinfo.io >&/dev/null; echo $?)
 		if [[ $isConnected == "0" ]]; then
 			isConnected=true
-			infoIP=$(curl -s ipinfo.io)
-			publicIP=$(echo "$infoIP" | grep \"ip\" | awk -F'"' '{ print $4 }')
+			# infoIP=$(curl -s ipinfo.io)
+			infoIP=$(curl -s https://api.db-ip.com/v2/free/self/)
+			publicIP=$(echo "$infoIP" | grep \"ip | awk -F'"' '{ print $4 }')
 			cityIP=$(echo "$infoIP" | grep city | awk -F'"' '{ print $4 }')
-			regionIP=$(echo "$infoIP" | grep region | awk -F'"' '{ print $4 }')
-			countryIP=$(echo "$infoIP" | grep country | awk -F'"' '{ print $4 }')
+			regionIP=$(echo "$infoIP" | grep continentName | awk -F'"' '{ print $4 }')
+			countryIP=$(echo "$infoIP" | grep countryName | awk -F'"' '{ print $4 }')
 			Log "STATUS | CONNECTED $publicIP $cityIP $regionIP $countryIP | KILLSWITCH"
 		else
 			isConnected=false
@@ -493,7 +570,7 @@ Enable_vpn()
 
 	source $ovpnConf
 	echo "Enabling OpenVPN..."
-	systemctl enable openvpn-client@$defaultVPNConnection.service
+	Set_Service enable openvpn-client@$defaultVPNConnection.service
 	echo "...OpenVPN Enabled on start-up"
 	Log "STATUS | OpenVPN Enabled on start-up"
 	#if $killSwitchEnabled; then
@@ -512,7 +589,7 @@ Disable_vpn()
 
 source $ovpnConf
 	echo "Disabling OpenVPN..."
-	systemctl disable openvpn-client@$defaultVPNConnection.service
+	Set_Service disable openvpn-client@$defaultVPNConnection.service
 	if $killSwitchEnabled; then
 		echo "WARNING - Kill Switched is enabled, you will have no connection to the internet."
 		Log "WARNING | Kill Switch is enabled, but OpenVPN is disabled. Internet Connection not Possible"
@@ -533,7 +610,7 @@ Start_vpn()
 
 	source $ovpnConf
 	echo "Starting OpenVPN..."
-	systemctl start openvpn-client@$defaultVPNConnection.service
+	Set_service ystemctl start openvpn-client@$defaultVPNConnection.service
 	#if $killSwitchEnabled; then
 		# echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
 		# Killswitch on
@@ -552,7 +629,7 @@ Stop_vpn()
 
 	source $ovpnConf
 	echo "Stopping OpenVPN..."
-	systemctl stop openvpn-client@$defaultVPNConnection.service
+	Set_Service stop openvpn-client@$defaultVPNConnection.service
 	if $killSwitchEnabled; then
 		echo "WARNING - Kill Switched is enabled, you will have no connection to the internet."
 		Log "WARNING | Kill Switch is enabled, but OpenVPN has just stopped. Internet Connection not Possible"
@@ -574,7 +651,7 @@ Restart_vpn()
 	
 	source $ovpnConf
 	echo "Restarting OpenVPN..."
-	systemctl restart openvpn-client@$defaultVPNConnection.service
+	Set_Service restart openvpn-client@$defaultVPNConnection.service
 	ufw reload
 	#if $killSwitchEnabled; then
 		# echo "Starting Kill Switch, Kill Switch set to enable when OpenVPN starts"
@@ -594,10 +671,10 @@ Status_vpn()
 	fi
 	
 	source $ovpnConf
-	systemctl status openvpn-client@$defaultVPNConnection.service
+	Set_Service status openvpn-client@$defaultVPNConnection.service
 	echo
 	echo
-	systemctl status killswitch.service
+	Set_Service status killswitch.service
 }
 
 View_logs()
