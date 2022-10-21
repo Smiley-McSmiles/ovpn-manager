@@ -24,7 +24,7 @@ Log()
 	fi
 
 	echo "$_date $_errorMessage" >> $_logFile
-	echo "$_date $_errorMessage"
+	echo "$_errorMessage"
 	chown -f root:root $_logFile
 	chmod -f 770 $_logFile
 
