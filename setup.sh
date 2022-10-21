@@ -163,6 +163,7 @@ Setup()
 	cp ovpn.sh /bin/ovpn
 	ln -s /bin/ovpn /usr/local/bin/ovpn
 	chown -Rf root:root $_serviceStorageDir
+	chmod -Rf +x $_serviceStorageDir
 	
 	if [ -x "$(command -v sestatus)" ]; then
 		/sbin/restorecon -v /usr/lib/systemd/system/openvpn-client@.service

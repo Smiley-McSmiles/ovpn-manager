@@ -150,7 +150,7 @@ Set_Service()
 			fi ;;
 		status)
 			if $_isRunit; then
-				sv status $_service
+				sv check $_service
 			elif $_isSystemd; then
 				systemctl status $_service
 			fi ;;
