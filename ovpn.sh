@@ -117,8 +117,12 @@ Set_Service()
 		echo "Delete Me 5"
 	fi
 
+	if [[ $_operation == "enable" ]]; then
+		_operation=enable2
+	fi
+
 	case "$_operation" in
-		enable)
+		enable2)
 			if $_isRunit; then
 				echo "Delete Me 6"
 				unlink $_serviceActiveDir/$_service
