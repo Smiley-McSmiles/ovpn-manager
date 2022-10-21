@@ -84,21 +84,20 @@ Log()
 Set_Service()
 {
 	# Example :  'Set_Service enable|disable|start|stop|restart|status <servcie>'
-	_opetation=$1
+	_operation=$1
 	_service=$2
 	_serviceStorageDir=
 	_serviceActiveDir=
 	_isSystemd=false
 	_isRunit=false
 
-	echo "Delete Me 1"
-
 	if [ -x "$(command -v sv)" ]; then
 		_isRunit=true
-		echo "Delete Me 2"
+		if [[ $_service == *".service" ]]; then
+			_service=$(echo $_service | cut -d "." -f 1)
+		fi
 		if [[ $_service == *"@"* ]]; then
 			_service=$(echo $_service | cut -d "@" -f 1)
-			echo "Delete Me 3"
 		fi
 	elif [ -x "$(command -v systemctl)" ]; then
 		_isSystemd=true
@@ -114,17 +113,11 @@ Set_Service()
 	elif [ -d /etc/runit/sv ]; then # Artix Linux - Runit
 		_serviceStorageDir=/etc/runit/sv
 		_serviceActiveDir=/run/runit/service
-		echo "Delete Me 5"
-	fi
-
-	if [[ $_operation == "enable" ]]; then
-		_operation=enable2
 	fi
 
 	case "$_operation" in
-		enable2)
+		enable)
 			if $_isRunit; then
-				echo "Delete Me 6"
 				unlink $_serviceActiveDir/$_service
 				ln -s $_serviceStorageDir/$_service $_serviceActiveDir/
 			elif $_isSystemd; then
