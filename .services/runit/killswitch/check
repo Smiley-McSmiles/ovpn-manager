@@ -1,3 +1,5 @@
 #!/bin/bash
 
-tail /var/log/ovpn.log
+message=$(tail /var/log/ovpn.log)
+
+echo $message
