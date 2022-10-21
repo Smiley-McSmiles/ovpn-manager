@@ -108,7 +108,7 @@ Set_Service()
 		_serviceActiveDir=/var/service/
 	elif [ -d /etc/runit/sv ]; then # Artix Linux - Runit
 		_serviceStorageDir=/etc/runit/sv
-		_serviceActiveDir=/var/service/
+		_serviceActiveDir=/run/runit/service
 	fi
 
 	case "$_operation" in

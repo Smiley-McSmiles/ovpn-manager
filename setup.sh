@@ -139,11 +139,9 @@ Setup()
 
 	if [ -d /etc/sv ]; then # Void Linux - Runit
 		_serviceStorageDir=/etc/sv
-		_serviceActiveDir=/var/service/
 		cp -rfv .services/runit/* $_serviceStorageDir/
 	elif [ -d /etc/runit/sv ]; then # Artix Linux - Runit
 		_serviceStorageDir=/etc/runit/sv
-		_serviceActiveDir=/var/service/
 		cp -rfv .services/runit/* $_serviceStorageDir/
 	elif [ -x "$(command -v systemctl)" ]; then
 		_serviceStorageDir=/usr/lib/systemd/system/
