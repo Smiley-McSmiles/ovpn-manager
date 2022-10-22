@@ -356,6 +356,7 @@ Killswitch_Enable()
 	elif [ -x "$(command -v firewall-cmd)" ]; then 
 		firewall-cmd --permanent --add-source=$VPN_IP
 		firewall-cmd --reload
+		Log "WARNING | FIREWALLD SUPPORT IS LIMITED, KILLSWITCH NOT SECURE ENOUGH"
 	else
 		Log "ERROR | FAILED TO ALLOW $VPN_IP! NO 'ufw' OR 'firewall-cmd' COMMAND FOUND!"
 	fi
@@ -631,6 +632,7 @@ Stop_vpn()
 		# systemctl stop killswitch.service
 		# Change_variable killSwitchEnabled true bool $ovpnConf
 	fi
+	echo "...OpenVPN has stopped"
 	Log "STATUS | Stopped OpenVPN"
 }
 
@@ -651,6 +653,7 @@ Restart_vpn()
 		# systemctl enable killswitch.service
 		# systemctl restart killswitch.service
 	#fi
+	echo "...OpenVPN has restarted"
 	Log "STATUS | Restarted OpenVPN"
 }
 
