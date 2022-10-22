@@ -11,6 +11,28 @@ Has_sudo()
 	fi
 }
 
+Log()
+{
+	# Example : 'Log "ERROR | ERROR MESSAGE"'
+	_errorMessage=$1
+	_date="[ $(date) ] |"
+	_logFile=/var/log/ovpn.log
+	_logFileLines=
+
+	if [ -f $_logFile ]; then
+		_logFileLines=$(wc -l $_logFile | cut -d " " -f 1)
+	fi
+
+	echo "$_date $_errorMessage" >> $_logFile
+	echo "$_errorMessage"
+	chown -f root:root $_logFile
+	chmod -f 770 $_logFile
+
+	if [ $_logFileLines -ge 1000 ]; then
+		sed -i '1d' $_logFile
+	fi
+}
+
 Change_variable()
 {
 	# Change_variable varToChange newVarContent VarType sourceFile
@@ -77,7 +99,8 @@ Install_dependancies()
 		echo "|              PLEASE MANUALLY INSTALL THESE PACKAGES:              |"
 		echo "|                             openvpn                               |"
 		echo "|-------------------------------------------------------------------|"
-		
+		Log "ERROR | FAILED TO FIND /etc/os-release FILE!"
+		Log "ERROR | COULD NOT IDENTIFY PACKAGE MANAGER!"
 		read -p "Press ENTER to continue" ENTER
 	fi
 }
@@ -98,13 +121,35 @@ Disable_IPv6()
 Setup()
 {
 	Has_sudo
-	ovpnServiceLocation=/usr/lib/systemd/system/
+	_serviceStorageDir=
+	_serviceActiveDir=
 	Install_dependancies
 	echo "Press ENTER to skip"
 	read -p "Input your VPN Provider : " accountFileName
 	read -p "Input your VPN Account Name : " vpnAccountName
 	read -p "Input your VPN Password : " vpnPassword
 	clear
+
+	if [ -x "$(command -v sv)" ]; then
+		_isRunit=true
+		if [[ $_service == *"@"* ]]; then
+			_service=$(echo $_service | cut -d "@" -f 1)
+		fi
+	fi
+
+	if [ -d /etc/sv ]; then # Void Linux - Runit
+		_serviceStorageDir=/etc/sv
+		cp -rfv .services/runit/* $_serviceStorageDir/
+	elif [ -d /etc/runit/sv ]; then # Artix Linux - Runit
+		_serviceStorageDir=/etc/runit/sv
+		cp -rfv .services/runit/* $_serviceStorageDir/
+	elif [ -x "$(command -v systemctl)" ]; then
+		_serviceStorageDir=/usr/lib/systemd/system/
+		cp -rfv .services/systemd/* $_serviceStorageDir/
+	else
+		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
+		exit
+	fi
 	
 	if [[ -n $vpnAccountName ]]; then
 		mkdir -p /etc/openvpn/accounts/
@@ -115,10 +160,10 @@ Setup()
  	fi
 	Fix_Permissions
 	Disable_IPv6
-	mv ovpn.sh /bin/ovpn
+	cp ovpn.sh /bin/ovpn
 	ln -s /bin/ovpn /usr/local/bin/ovpn
-	mv -fv .services/* $ovpnServiceLocation
-	chown -Rf root:root $ovpnServiceLocation
+	chown -Rf root:root $_serviceStorageDir
+	chmod -Rf +x $_serviceStorageDir
 	
 	if [ -x "$(command -v sestatus)" ]; then
 		/sbin/restorecon -v /usr/lib/systemd/system/openvpn-client@.service
@@ -127,9 +172,9 @@ Setup()
 	fi
 	
 	if [ -x "$(command -v apt)" ] || [ -x "$(command -v pacman)" ] || [ -x "$(command -v zypper)" ]; then
-		mv -f .man-page/ovpn.1 /usr/share/man/man1/
+		cp -f .man-page/ovpn.1 /usr/share/man/man1/
 	elif [ -x "$(command -v dnf)" ]; then
-		mv -f .man-page/ovpn.1 /usr/local/share/man/man1/
+		cp -f .man-page/ovpn.1 /usr/local/share/man/man1/
 	fi
 
 	chmod +x /bin/ovpn

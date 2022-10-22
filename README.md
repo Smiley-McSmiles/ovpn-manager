@@ -13,7 +13,7 @@ sudo ./setup.sh
 ## USAGE
 
 ```sh
-OpenVPN Manager v1.1.3
+OpenVPN Manager v1.1.4
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]
@@ -31,6 +31,7 @@ COMMANDS:
 -v Print the version OpenVPN Manager
 -b Backup OpenVPN Manager Configurations
 -rb [backup.tar] Restore OpenVPN Manager Configurations
+-l View logs
 -h Display this help menu
 
 Kill Switch Behavior:
