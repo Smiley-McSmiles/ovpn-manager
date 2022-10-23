@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.5"
+version="1.1.6"
 
 Has_sudo()
 {
@@ -391,7 +391,7 @@ Killswitch_Enable()
 			_retriesLeft=$(( 5 - $_iteration ))
 			echo "Retries left: $_retriesLeft"
 			echo "Cannot connect to the internet."
-			
+			sleep 5
 			_iteration=$(($_iteration + 1))
 			if [ $_iteration -ge 5 ]; then
 				echo "Restarting OpenVPN in 5 seconds"
