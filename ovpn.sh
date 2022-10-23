@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.4"
+version="1.1.5"
 
 Has_sudo()
 {
@@ -118,6 +118,7 @@ Set_Service()
 		enable)
 			if $_isRunit; then
 				unlink $_serviceActiveDir/$_service
+				rm -f $_serviceStorageDir/$_service/down
 				ln -s $_serviceStorageDir/$_service $_serviceActiveDir/
 			elif $_isSystemd; then
 				systemctl enable $_service
