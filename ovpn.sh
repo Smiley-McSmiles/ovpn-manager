@@ -144,6 +144,7 @@ Set_Service()
 		restart)
 			if $_isRunit; then
 				sv down $_service
+				sleep 5
 				sv up $_service
 			elif $_isSystemd; then
 				systemctl restart $_service
