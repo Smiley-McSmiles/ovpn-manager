@@ -342,11 +342,15 @@ Killswitch_Enable()
 		# ufw allow in from any to $VPN_IP
 		
 		ufw allow out from any to 10.0.0.0/24
+		ufw allow out from any to 10.0.1.0/24
 		ufw allow out from any to 172.16.0.0/24
+		ufw allow out from any to 172.16.1.0/24
 		ufw allow out from any to 192.168.0.0/24
 		ufw allow out from any to 192.168.1.0/24
 		ufw allow in from any to 10.0.0.0/24
+		ufw allow in from any to 10.0.1.0/24
 		ufw allow in from any to 172.16.0.0/24
+		ufw allow in from any to 172.16.1.0/24
 		ufw allow in from any to 192.168.0.0/24
 		ufw allow in from any to 192.168.1.0/24
 		
@@ -387,17 +391,16 @@ Killswitch_Enable()
 			Log "STATUS | CONNECTED $publicIP $cityIP $regionIP $countryIP | KILLSWITCH"
 		else
 			isConnected=false
-			Log "STATUS | DISCONNECTED | KILLSWITCH"
+			Log "WARNING | DISCONNECTED | KILLSWITCH"
 		fi
 		
 		while ! $isConnected; do
 			_retriesLeft=$(( 5 - $_iteration ))
-			echo "Retries left: $_retriesLeft"
-			echo "Cannot connect to the internet."
+			Log "WARNING | DISCONNECTED - Retries left: $_retriesLeft | KILLSWITCH"
 			sleep 5
 			_iteration=$(($_iteration + 1))
 			if [ $_iteration -ge 5 ]; then
-				echo "Restarting OpenVPN in 5 seconds"
+				Log "WARNING | RESTARTING OpenVPN IN 5 SECONDS! | KILLSWITCH"
 				sleep 5
 				ovpn -r
 			fi
@@ -410,7 +413,7 @@ Killswitch_Enable()
 				Log "STATUS | CONNECTED $publicIP $cityIP $regionIP $countryIP | KILLSWITCH"
 			else
 				isConnected=false
-				Log "STATUS | DISCONNECTED | KILLSWITCH"
+				Log "WARNING | DISCONNECTED | KILLSWITCH"
 			fi
 		done
 		
@@ -423,7 +426,7 @@ Killswitch_Enable()
 		echo " REGION   --> $regionIP"
 		echo " COUNTRY  --> $countryIP"
 		echo " CITY     --> $cityIP"
-		echo " Status check interval: 30 seconds"
+		echo " Status check interval: 5 minutes"
 
 		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 		if [[ ! -n $VPN_INTERFACE ]]; then
@@ -431,7 +434,7 @@ Killswitch_Enable()
 			ovpn -r
 		fi
 		
-		sleep 30
+		sleep 300
 	done
 }
 
