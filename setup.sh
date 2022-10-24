@@ -123,12 +123,14 @@ Setup()
 	Has_sudo
 	_serviceStorageDir=
 	_serviceActiveDir=
-	Install_dependancies
-	echo "Press ENTER to skip"
-	read -p "Input your VPN Provider : " accountFileName
-	read -p "Input your VPN Account Name : " vpnAccountName
-	read -p "Input your VPN Password : " vpnPassword
-	clear
+	if [ ! -x "$(command -v ovpn)" ]; then
+		Install_dependancies
+		echo "Press ENTER to skip"
+		read -p "Input your VPN Provider : " accountFileName
+		read -p "Input your VPN Account Name : " vpnAccountName
+		read -p "Input your VPN Password : " vpnPassword
+		clear
+	fi
 
 	if [ -x "$(command -v sv)" ]; then
 		_isRunit=true
@@ -150,6 +152,7 @@ Setup()
 		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
 		exit
 	fi
+
 	
 	if [[ -n $vpnAccountName ]]; then
 		mkdir -p /etc/openvpn/accounts/
