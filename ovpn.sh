@@ -151,6 +151,8 @@ Set_Service()
 		status)
 			if $_isRunit; then
 				sv check $_service
+				tail /var/log/openvpn.log
+				tail /var/log/ovpn.log
 			elif $_isSystemd; then
 				systemctl status $_service
 			fi ;;
@@ -680,9 +682,7 @@ View_logs()
 	fi
 
 	echo "OVPN - Manager logs are located at /var/log/ovpn.log"
-	echo
-	read -p "Press ENTER to view logs | Press Q to exit the logs..." ENTER
-	less /var/log/ovpn.log
+	tail /var/log/ovpn.log
 }
 
 Help()
