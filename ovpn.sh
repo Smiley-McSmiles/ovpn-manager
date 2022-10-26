@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.6"
+version="1.1.7"
 
 Has_sudo()
 {
@@ -152,7 +152,13 @@ Set_Service()
 		status)
 			if $_isRunit; then
 				sv check $_service
+				echo "---------------"
+				echo "| OpenVPN Log |"
+				echo "---------------"
 				tail /var/log/openvpn.log
+				echo "-------------------"
+				echo "| Kill Switch Log |"
+				echo "-------------------"
 				tail /var/log/ovpn.log
 			elif $_isSystemd; then
 				systemctl status $_service
@@ -295,13 +301,13 @@ Killswitch_Enable()
 	VPN_PORT=$(Clean_Number $VPN_PORT)
 	VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
 	VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
-	VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
+	VPN_INTERFACE=$(ip link show | grep -o "tun"[0-9])
 	echo "Looking for tun interface..."
 	echo 'WARNING - If this hangs forever, OpenVPN may not be started...'
 	
 	_iteration=1
 	while [[ ! -n $VPN_INTERFACE ]]; do
-		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
+		VPN_INTERFACE=$(ip link show | grep -o "tun"[0-9])
 		sleep 2
 		echo "...Connection attempt [$_iteration/10]"
 		_iteration=$(($_iteration + 1))
@@ -428,7 +434,7 @@ Killswitch_Enable()
 		echo " CITY     --> $cityIP"
 		echo " Status check interval: 5 minutes"
 
-		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
+		VPN_INTERFACE=$(ip link show | grep -o "tun"[0-9])
 		if [[ ! -n $VPN_INTERFACE ]]; then
 			Log "ERROR | NO `tun` INTERFACE FOUND RESTARTING OpenVPN | KILLSWITCH"
 			ovpn -r

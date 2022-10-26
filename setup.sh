@@ -153,7 +153,7 @@ Setup()
 		exit
 	fi
 
-	
+
 	if [[ -n $vpnAccountName ]]; then
 		mkdir -p /etc/openvpn/accounts/
 		mkdir -p /etc/openvpn/client/
@@ -167,6 +167,8 @@ Setup()
 	ln -s /bin/ovpn /usr/local/bin/ovpn
 	chown -Rf root:root $_serviceStorageDir
 	chmod -Rf +x $_serviceStorageDir
+
+	# install -C -m 770 -o root $SOURCEFILE $DESTFILE
 	
 	if [ -x "$(command -v sestatus)" ]; then
 		/sbin/restorecon -v /usr/lib/systemd/system/openvpn-client@.service
