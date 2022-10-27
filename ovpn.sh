@@ -152,14 +152,6 @@ Set_Service()
 		status)
 			if $_isRunit; then
 				sv check $_service
-				echo "---------------"
-				echo "| OpenVPN Log |"
-				echo "---------------"
-				tail /var/log/openvpn.log
-				echo "-------------------"
-				echo "| Kill Switch Log |"
-				echo "-------------------"
-				tail /var/log/ovpn.log
 			elif $_isSystemd; then
 				systemctl status $_service
 			fi ;;
@@ -679,9 +671,17 @@ Status_vpn()
 	
 	source $ovpnConf
 	Set_Service status openvpn-client@$defaultVPNConnection.service
+	if [ -f /var/log/openvpn.log ]; then
+		tail /var/log/openvpn.log
+	fi
+
 	echo
 	echo
 	Set_Service status killswitch.service
+	if [ -f /var/log/openvpn.log ]; then
+		tail /var/log/ovpn.log
+	fi
+
 }
 
 View_logs()

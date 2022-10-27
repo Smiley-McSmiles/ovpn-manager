@@ -3,7 +3,7 @@ OVPN-Manager is a simple BASH script to install, and manage your OpenVPN client 
 
 > v1.1.7
 
-> Tested on Fedora 36, EndeavourOS, Artix Linux (Runit)
+> Tested on Fedora 36, Ubuntu 22.04, Arch Linux, and Artix Linux (Runit)
 
 ### What is supported:
 - GNU/Linux Systems with
