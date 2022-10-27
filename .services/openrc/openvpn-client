@@ -4,7 +4,7 @@ source /etc/openvpn/ovpn.conf
 
 name="openvpn-client"
 command="/bin/openvpn"
-command_argstart="--config /etc/openvpn/client/$defaultVPNConnection.conf | tee /var/log/openvpn.log"
+command_argstart="--config /etc/openvpn/client/$defaultVPNConnection.conf" # | tee /var/log/openvpn.log"
 command_user="root"
 pidfile="/run/ovpn/$name.pid"
 processid=
