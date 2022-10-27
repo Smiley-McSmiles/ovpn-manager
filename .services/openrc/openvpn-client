@@ -7,7 +7,7 @@ command="/bin/openvpn"
 command_argstart="--config /etc/openvpn/client/$defaultVPNConnection.conf | tee /var/log/openvpn.log"
 command_user="root"
 pidfile="/run/ovpn/$name.pid"
-processid=$(cat $pidfile)
+processid=
 command_background="yes"
 
 depend() {
@@ -23,6 +23,7 @@ start() {
 }
 
 stop() {
+	processid=$(cat $pidfile)
 	ebegin "Stopping OpenVPN Client $defaultVPNConnection"
 	start-stop-daemon --stop \
 		--exec kill -SIGINT $processid
