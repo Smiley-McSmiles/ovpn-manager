@@ -17,7 +17,7 @@ depend() {
 start() {
 	ebegin "Starting OpenVPN Client $defaultVPNConnection"
 	start-stop-daemon --background --start \
-		--exec $command $command_argstart \
+		--exec $command -- $command_argstart \
 		--make-pidfile --pidfile $pidfile
 	eend $?
 }
