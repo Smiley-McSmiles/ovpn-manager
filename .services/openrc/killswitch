@@ -17,7 +17,7 @@ start() {
 	ebegin "Starting killswitch"
 	start-stop-daemon --background --start \
 		--exec $command -- $command_argstart \
-		--pidfile $pidfile
+		--pidfile $pidfile --daemon
 	eend $?
 }
 

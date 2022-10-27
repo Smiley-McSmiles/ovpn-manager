@@ -18,7 +18,7 @@ start() {
 	ebegin "Starting OpenVPN Client $defaultVPNConnection"
 	start-stop-daemon --background --start \
 		--exec $command -- $command_argstart \
-		--make-pidfile --pidfile $pidfile
+		--make-pidfile --pidfile $pidfile --daemon
 	eend $?
 }
 
@@ -33,5 +33,5 @@ stop() {
 status() {
 	ebegin "Status OpenVPN Client $defaultVPNConnection"
 	echo "------------------------------------------------------------"
-	tail /var/log/ovpn.log
+	tail /var/log/openvpn.log
 }
