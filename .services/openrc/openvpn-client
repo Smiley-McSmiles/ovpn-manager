@@ -1,0 +1,36 @@
+#!/sbin/openrc-run
+
+source /etc/openvpn/ovpn.conf
+
+name="openvpn-client"
+command="/bin/openvpn"
+command_argstart="--config /etc/openvpn/client/$defaultVPNConnection.conf | tee /var/log/openvpn.log"
+command_user="root"
+pidfile="/run/ovpn/$name.pid"
+processid=$(cat $pidfile)
+command_background="yes"
+
+depend() {
+	need net
+}
+
+start() {
+	ebegin "Starting OpenVPN Client $defaultVPNConnection"
+	start-stop-daemon --background --start \
+		--exec $command $command_argstart \
+		--make-pidfile --pidfile $pidfile
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping OpenVPN Client $defaultVPNConnection"
+	start-stop-daemon --stop \
+		--exec kill -SIGINT $processid
+	eend $?
+}
+
+status() {
+	ebegin "Status OpenVPN Client $defaultVPNConnection"
+	echo "------------------------------------------------------------"
+	tail /var/log/ovpn.log
+}
