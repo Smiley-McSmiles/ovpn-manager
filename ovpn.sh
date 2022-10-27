@@ -90,20 +90,26 @@ Set_Service()
 	_serviceActiveDir=
 	_isSystemd=false
 	_isRunit=false
+	_isOpenrc=false
 
 	if [ -x "$(command -v sv)" ]; then
 		_isRunit=true
+	elif [ -x "$(command -v rc-update)" ]; then
+		_isOpenrc=true
+	elif [ -x "$(command -v systemctl)" ]; then
+		_isSystemd=true
+	else
+		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
+		exit
+	fi
+
+	if ! $_isSystemd; then
 		if [[ $_service == *".service" ]]; then
 			_service=$(echo $_service | cut -d "." -f 1)
 		fi
 		if [[ $_service == *"@"* ]]; then
 			_service=$(echo $_service | cut -d "@" -f 1)
 		fi
-	elif [ -x "$(command -v systemctl)" ]; then
-		_isSystemd=true
-	else
-		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
-		exit
 	fi
 
 	if [ -d /etc/sv ]; then # Void Linux - Runit
@@ -120,24 +126,32 @@ Set_Service()
 				unlink $_serviceActiveDir/$_service
 				rm -f $_serviceStorageDir/$_service/down
 				ln -s $_serviceStorageDir/$_service $_serviceActiveDir/
+			elif $_isOpenrc; then
+				rc-update add $_service default
 			elif $_isSystemd; then
 				systemctl enable $_service
 			fi ;;
 		disable)
 			if $_isRunit; then
 				touch $_serviceActiveDir/$_service/down
+			elif $_isOpenrc; then
+				rc-update del $_service default
 			elif $_isSystemd; then
 				systemctl disable $_service
 			fi ;;
 		start)
 			if $_isRunit; then
 				sv up $_service
+			elif $_isOpenrc; then
+				rc-service $_service start
 			elif $_isSystemd; then
 				systemctl start $_service
 			fi ;;
 		stop)
 			if $_isRunit; then
 				sv down $_service
+			elif $_isOpenrc; then
+				rc-service $_service stop
 			elif $_isSystemd; then
 				systemctl stop $_service
 			fi ;;
@@ -146,12 +160,16 @@ Set_Service()
 				sv down $_service
 				sleep 5
 				sv up $_service
+			elif $_isOpenrc; then
+				rc-service $_service restart
 			elif $_isSystemd; then
 				systemctl restart $_service
 			fi ;;
 		status)
 			if $_isRunit; then
 				sv check $_service
+			elif $_isOpenrc; then
+				rc-service $_service status
 			elif $_isSystemd; then
 				systemctl status $_service
 			fi ;;
@@ -278,6 +296,7 @@ Killswitch_Enable()
 		echo "$USER, please run ovpn with sudo or as root"
 		exit
 	fi
+	echo "${PPID}" > /run/ovpn/killswitch.pid
 
 	source $ovpnConf
 	echo "Enabling Kill Switch..."

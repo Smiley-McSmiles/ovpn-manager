@@ -7,12 +7,11 @@ OVPN-Manager is a simple BASH script to install, and manage your OpenVPN client 
 
 ### What is supported:
 - GNU/Linux Systems with
-  - SystemD or Runit
+  - SystemD, Runit, or OpenRC
   - SELinux or Apparmour
 
 ### What will be supported:
 - BSD systems
-- OpenRC init system
 - s6 init system
 
 ## INSTALL/UPDATE INSTRUCTIONS

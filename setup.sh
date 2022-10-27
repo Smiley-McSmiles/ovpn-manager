@@ -145,6 +145,9 @@ Setup()
 	elif [ -d /etc/runit/sv ]; then # Artix Linux - Runit
 		_serviceStorageDir=/etc/runit/sv
 		cp -rfv .services/runit/* $_serviceStorageDir/
+	elif [ -x "$(command -v rc-update)" ]; then
+		_serviceStorageDir=/etc/init.d
+		cp -rfv .services/openrc/* $_serviceStorageDir/
 	elif [ -x "$(command -v systemctl)" ]; then
 		_serviceStorageDir=/usr/lib/systemd/system/
 		cp -rfv .services/systemd/* $_serviceStorageDir/
