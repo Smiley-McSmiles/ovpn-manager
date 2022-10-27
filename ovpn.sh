@@ -672,6 +672,7 @@ Status_vpn()
 	source $ovpnConf
 	Set_Service status openvpn-client@$defaultVPNConnection.service
 	if [ -f /var/log/openvpn.log ]; then
+		echo "------------------------------------------------------------"
 		tail /var/log/openvpn.log
 	fi
 
@@ -679,6 +680,7 @@ Status_vpn()
 	echo
 	Set_Service status killswitch.service
 	if [ -f /var/log/openvpn.log ]; then
+	echo "------------------------------------------------------------"
 		tail /var/log/ovpn.log
 	fi
 
