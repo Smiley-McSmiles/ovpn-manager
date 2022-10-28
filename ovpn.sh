@@ -301,11 +301,6 @@ Killswitch_Enable()
 	source $ovpnConf
 	echo "Enabling Kill Switch..."
 	Change_variable killSwitchEnabled true bool $ovpnConf
-	Set_Service enable ufw
-	Set_Service start ufw
-	ufw enable
-	ufw default deny outgoing
-	ufw default deny incoming
 	vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
 	VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
 	VPN_PORT=$(awk '/remote / {print $3}' $vpnConfFile)
@@ -350,6 +345,12 @@ Killswitch_Enable()
 		echo "VPN_PORT=$VPN_PORT"
 		echo "VPN_PORT_PROTO=$VPN_PORT_PROTO"
 		echo "VPN_INTERFACE=$VPN_INTERFACE"
+		Set_Service enable ufw
+		Set_Service start ufw
+		ufw enable
+		ufw default deny outgoing
+		ufw default deny incoming
+
 		ufw allow out on $VPN_INTERFACE from any to any
 		ufw allow in on $VPN_INTERFACE from any to any
 		
