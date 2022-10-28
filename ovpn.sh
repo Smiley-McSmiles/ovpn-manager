@@ -335,6 +335,7 @@ Killswitch_Enable()
 			else
 				echo "STOPPING ALL CONNECTIONS ON INTERFACE $interface..."
 				ip link set $interface down
+				sleep .5
 				ip link set $interface up
 				echo "DONE!"
 			fi
