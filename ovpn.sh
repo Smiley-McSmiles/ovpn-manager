@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.7"
+version="1.1.6"
 
 Has_sudo()
 {
@@ -90,26 +90,20 @@ Set_Service()
 	_serviceActiveDir=
 	_isSystemd=false
 	_isRunit=false
-	_isOpenrc=false
 
 	if [ -x "$(command -v sv)" ]; then
 		_isRunit=true
-	elif [ -x "$(command -v rc-update)" ]; then
-		_isOpenrc=true
-	elif [ -x "$(command -v systemctl)" ]; then
-		_isSystemd=true
-	else
-		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
-		exit
-	fi
-
-	if ! $_isSystemd; then
 		if [[ $_service == *".service" ]]; then
 			_service=$(echo $_service | cut -d "." -f 1)
 		fi
 		if [[ $_service == *"@"* ]]; then
 			_service=$(echo $_service | cut -d "@" -f 1)
 		fi
+	elif [ -x "$(command -v systemctl)" ]; then
+		_isSystemd=true
+	else
+		Log "ERROR | NO INIT SYSTEM FOUND, EXITING!"
+		exit
 	fi
 
 	if [ -d /etc/sv ]; then # Void Linux - Runit
@@ -126,32 +120,24 @@ Set_Service()
 				unlink $_serviceActiveDir/$_service
 				rm -f $_serviceStorageDir/$_service/down
 				ln -s $_serviceStorageDir/$_service $_serviceActiveDir/
-			elif $_isOpenrc; then
-				rc-update add $_service default
 			elif $_isSystemd; then
 				systemctl enable $_service
 			fi ;;
 		disable)
 			if $_isRunit; then
 				touch $_serviceActiveDir/$_service/down
-			elif $_isOpenrc; then
-				rc-update del $_service default
 			elif $_isSystemd; then
 				systemctl disable $_service
 			fi ;;
 		start)
 			if $_isRunit; then
 				sv up $_service
-			elif $_isOpenrc; then
-				rc-service $_service start
 			elif $_isSystemd; then
 				systemctl start $_service
 			fi ;;
 		stop)
 			if $_isRunit; then
 				sv down $_service
-			elif $_isOpenrc; then
-				rc-service $_service stop
 			elif $_isSystemd; then
 				systemctl stop $_service
 			fi ;;
@@ -160,16 +146,14 @@ Set_Service()
 				sv down $_service
 				sleep 5
 				sv up $_service
-			elif $_isOpenrc; then
-				rc-service $_service restart
 			elif $_isSystemd; then
 				systemctl restart $_service
 			fi ;;
 		status)
 			if $_isRunit; then
 				sv check $_service
-			elif $_isOpenrc; then
-				rc-service $_service status
+				tail /var/log/openvpn.log
+				tail /var/log/ovpn.log
 			elif $_isSystemd; then
 				systemctl status $_service
 			fi ;;
@@ -296,24 +280,28 @@ Killswitch_Enable()
 		echo "$USER, please run ovpn with sudo or as root"
 		exit
 	fi
-	echo "${PPID}" > /run/ovpn/killswitch.pid
 
 	source $ovpnConf
 	echo "Enabling Kill Switch..."
 	Change_variable killSwitchEnabled true bool $ovpnConf
+	Set_Service enable ufw
+	Set_Service start ufw
+	ufw enable
+	ufw default deny outgoing
+	ufw default deny incoming
 	vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
 	VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
 	VPN_PORT=$(awk '/remote / {print $3}' $vpnConfFile)
 	VPN_PORT=$(Clean_Number $VPN_PORT)
 	VPN_PORT_PROTO=$(awk '/proto/ {print $2}' $vpnConfFile)
 	VPN_PORT_PROTO=$(Clean_Letters "$VPN_PORT_PROTO")
-	VPN_INTERFACE=$(ip link show | grep -o "tun"[0-9])
+	VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 	echo "Looking for tun interface..."
 	echo 'WARNING - If this hangs forever, OpenVPN may not be started...'
 	
 	_iteration=1
 	while [[ ! -n $VPN_INTERFACE ]]; do
-		VPN_INTERFACE=$(ip link show | grep -o "tun"[0-9])
+		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 		sleep 2
 		echo "...Connection attempt [$_iteration/10]"
 		_iteration=$(($_iteration + 1))
@@ -345,12 +333,6 @@ Killswitch_Enable()
 		echo "VPN_PORT=$VPN_PORT"
 		echo "VPN_PORT_PROTO=$VPN_PORT_PROTO"
 		echo "VPN_INTERFACE=$VPN_INTERFACE"
-		Set_Service enable ufw
-		Set_Service start ufw
-		ufw enable
-		ufw default deny outgoing
-		ufw default deny incoming
-
 		ufw allow out on $VPN_INTERFACE from any to any
 		ufw allow in on $VPN_INTERFACE from any to any
 		
@@ -446,7 +428,7 @@ Killswitch_Enable()
 		echo " CITY     --> $cityIP"
 		echo " Status check interval: 5 minutes"
 
-		VPN_INTERFACE=$(ip link show | grep -o "tun"[0-9])
+		VPN_INTERFACE=$(ifconfig | grep -o "tun"[0-9])
 		if [[ ! -n $VPN_INTERFACE ]]; then
 			Log "ERROR | NO `tun` INTERFACE FOUND RESTARTING OpenVPN | KILLSWITCH"
 			ovpn -r
@@ -691,19 +673,9 @@ Status_vpn()
 	
 	source $ovpnConf
 	Set_Service status openvpn-client@$defaultVPNConnection.service
-	if [ -f /var/log/openvpn.log ]; then
-		echo "------------------------------------------------------------"
-		tail /var/log/openvpn.log
-	fi
-
 	echo
 	echo
 	Set_Service status killswitch.service
-	if [ -f /var/log/openvpn.log ]; then
-	echo "------------------------------------------------------------"
-		tail /var/log/ovpn.log
-	fi
-
 }
 
 View_logs()

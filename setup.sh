@@ -145,9 +145,6 @@ Setup()
 	elif [ -d /etc/runit/sv ]; then # Artix Linux - Runit
 		_serviceStorageDir=/etc/runit/sv
 		cp -rfv .services/runit/* $_serviceStorageDir/
-	elif [ -x "$(command -v rc-update)" ]; then
-		_serviceStorageDir=/etc/init.d
-		cp -rfv .services/openrc/* $_serviceStorageDir/
 	elif [ -x "$(command -v systemctl)" ]; then
 		_serviceStorageDir=/usr/lib/systemd/system/
 		cp -rfv .services/systemd/* $_serviceStorageDir/
@@ -156,7 +153,7 @@ Setup()
 		exit
 	fi
 
-
+	
 	if [[ -n $vpnAccountName ]]; then
 		mkdir -p /etc/openvpn/accounts/
 		mkdir -p /etc/openvpn/client/
@@ -170,8 +167,6 @@ Setup()
 	ln -s /bin/ovpn /usr/local/bin/ovpn
 	chown -Rf root:root $_serviceStorageDir
 	chmod -Rf +x $_serviceStorageDir
-
-	# install -C -m 770 -o root $SOURCEFILE $DESTFILE
 	
 	if [ -x "$(command -v sestatus)" ]; then
 		/sbin/restorecon -v /usr/lib/systemd/system/openvpn-client@.service

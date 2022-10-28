@@ -1,22 +1,9 @@
 # DESCRIPTION
-OVPN-Manager is a simple BASH script to install, and manage your OpenVPN client connetions. Switch between connections and enable a kill switch to prevent IP leaks and import and backup your .ovpn connections to use on another system for easy setup.
-
-> v1.1.7
-
-> Tested on Fedora 36, Ubuntu 22.04, Arch Linux, and Artix Linux (Runit)
-
-### What is supported:
-- GNU/Linux Systems with
-  - SystemD, Runit, or OpenRC
-  - SELinux or Apparmour
-
-### What will be supported:
-- BSD systems
-- s6 init system
+OVPN-Manager is for the client only. Import and manage your .ovpn connections. Switch between them and enable a kill switch to prevent leaky connections.
 
 ## INSTALL/UPDATE INSTRUCTIONS
 
-```bash
+```sh
 git clone https://github.com/Smiley-McSmiles/ovpn-manager
 cd ovpn-manager
 chmod +x setup.sh
@@ -25,8 +12,8 @@ sudo ./setup.sh
 
 ## USAGE
 
-```
-OpenVPN Manager v1.1.7
+```sh
+OpenVPN Manager v1.1.6
 -Created by Smiley McSmiles & XeN
 
 Syntax: ovpn -[COMMAND] [OPTION]
@@ -52,4 +39,5 @@ Kill Switch Behavior:
 to your OpenVPN server is lost, there will be no connection to the internet.
 However, when the Kill Switch is enabled, and there is no connection to the internet,
 The Kill Switch will restart the OpenVPN systemd service to try and re-establish a conneciton.
+
 ```
