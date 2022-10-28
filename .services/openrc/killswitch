@@ -25,7 +25,7 @@ stop() {
 	processid=$(cat $pidfile)
 	ebegin "Stopping killswitch"
 	start-stop-daemon --stop \
-		--exec $command -- $command_argstop
+		--exec $command -- $command_argstop \
 		--exec kill $processid
 	eend $?
 }

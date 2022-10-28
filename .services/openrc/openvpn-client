@@ -1,4 +1,4 @@
-#!@SBINDIR@/openrc-run
+#!/sbin/openrc-run
 
 source /etc/openvpn/ovpn.conf
 vpn=${RC_SVCNAME#*.}
