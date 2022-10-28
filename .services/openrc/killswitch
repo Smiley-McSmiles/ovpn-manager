@@ -1,0 +1,47 @@
+#!/sbin/openrc-run
+
+source /etc/openvpn/ovpn.conf
+name="killswitch"
+command="/bin/ovpn"
+command_argstart="--dev-function Killswitch_Enable"
+command_argstop="--dev-function Killswitch_Disable"
+command_user="root"
+pidfile="/run/ovpn/$name.pid"
+processid=
+command_background="yes"
+killswitchSwitch="OFF"
+
+if $killSwitchEnabled; then
+	killswitchSwitch="ON"
+else
+	killswitchSwitch="OFF"
+fi
+
+depend() {
+	need net
+}
+
+start() {
+	ebegin "Starting killswitch"
+	start-stop-daemon --background --start \
+		--exec $command -- $command_argstart \
+		--pidfile $pidfile --daemon
+	eend $?
+}
+
+stop() {
+	exec $command $command_argstop
+	processid=$(cat $pidfile)
+	kill $processid
+#	ebegin "Stopping killswitch"
+#	start-stop-daemon --stop \
+#		--exec $command -- $command_argstop \
+#		--exec kill $processid
+#	eend $?
+}
+
+status() {
+	ebegin "Kill Switch $killswitchSwitch"
+	echo "------------------------------------------------------------"
+	tail /var/log/ovpn.log
+}
