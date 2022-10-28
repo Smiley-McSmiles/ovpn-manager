@@ -413,11 +413,11 @@ Killswitch_Enable()
 		fi
 		
 		while ! $isConnected; do
-			_retriesLeft=$(( 5 - $_iteration ))
+			_retriesLeft=$(( 10 - $_iteration ))
 			Log "WARNING | DISCONNECTED - Retries left: $_retriesLeft | KILLSWITCH"
 			sleep 5
 			_iteration=$(($_iteration + 1))
-			if [ $_iteration -ge 5 ]; then
+			if [ $_iteration -ge 10 ]; then
 				Log "WARNING | RESTARTING OpenVPN IN 5 SECONDS! | KILLSWITCH"
 				sleep 5
 				ovpn -r
@@ -428,6 +428,7 @@ Killswitch_Enable()
 			isConnected=$(ping -c 1 -q ipinfo.io >&/dev/null; echo $?)
 			if [[ $isConnected == "0" ]]; then
 				isConnected=true
+				_iteration=1
 				Log "STATUS | CONNECTED $publicIP $cityIP $regionIP $countryIP | KILLSWITCH"
 			else
 				isConnected=false
