@@ -148,6 +148,9 @@ Setup()
 	elif [ -x "$(command -v rc-update)" ]; then
 		_serviceStorageDir=/etc/init.d
 		cp -rfv .services/openrc/* $_serviceStorageDir/
+	elif [ -x "$(command -v dinitctl)" ]; then
+		_serviceStorageDir=/etc/dinit.d
+		cp -rfv .services/dinit/* $_serviceStorageDir/
 	elif [ -x "$(command -v systemctl)" ]; then
 		_serviceStorageDir=/usr/lib/systemd/system/
 		cp -rfv .services/systemd/* $_serviceStorageDir/
