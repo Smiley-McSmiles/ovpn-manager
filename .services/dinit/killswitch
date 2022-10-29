@@ -1,0 +1,5 @@
+type = process
+command = /bin/ovpn --dev-function Killswitch_Enable
+stop-command = /bin/ovpn --dev-function Killswitch_Disable
+restart = true
+waits-for = loginready
