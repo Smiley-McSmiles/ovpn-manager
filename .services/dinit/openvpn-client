@@ -1,0 +1,6 @@
+type = process
+command = /bin/openvpn --config /etc/openvpn/currentvpn.conf
+restart = true
+smooth-recovery = true
+logfile = /var/log/openvpn.log
+waits-for = loginready

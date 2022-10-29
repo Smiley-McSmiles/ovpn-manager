@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.7"
+version="1.1.8"
 
 Has_sudo()
 {
@@ -91,11 +91,14 @@ Set_Service()
 	_isSystemd=false
 	_isRunit=false
 	_isOpenrc=false
+	_isDinit=false
 
 	if [ -x "$(command -v sv)" ]; then
 		_isRunit=true
 	elif [ -x "$(command -v rc-update)" ]; then
 		_isOpenrc=true
+	elif [ -x "$(command -v dinitctl)" ]; then
+		_isDinit=true
 	elif [ -x "$(command -v systemctl)" ]; then
 		_isSystemd=true
 	else
@@ -128,6 +131,8 @@ Set_Service()
 				ln -s $_serviceStorageDir/$_service $_serviceActiveDir/
 			elif $_isOpenrc; then
 				rc-update add $_service default
+			elif $_isDinit; then
+				dinitctl enable $_service
 			elif $_isSystemd; then
 				systemctl enable $_service
 			fi ;;
@@ -136,6 +141,8 @@ Set_Service()
 				touch $_serviceActiveDir/$_service/down
 			elif $_isOpenrc; then
 				rc-update del $_service default
+			elif $_isDinit; then
+				dinitctl disable $_service
 			elif $_isSystemd; then
 				systemctl disable $_service
 			fi ;;
@@ -144,6 +151,8 @@ Set_Service()
 				sv up $_service
 			elif $_isOpenrc; then
 				rc-service $_service start
+			elif $_isDinit; then
+				dinitctl start $_service
 			elif $_isSystemd; then
 				systemctl start $_service
 			fi ;;
@@ -152,6 +161,8 @@ Set_Service()
 				sv down $_service
 			elif $_isOpenrc; then
 				rc-service $_service stop
+			elif $_isDinit; then
+				dinitctl stop $_service
 			elif $_isSystemd; then
 				systemctl stop $_service
 			fi ;;
@@ -162,6 +173,8 @@ Set_Service()
 				sv up $_service
 			elif $_isOpenrc; then
 				rc-service $_service restart
+			elif $_isDinit; then
+				dinitctl restart $_service
 			elif $_isSystemd; then
 				systemctl restart $_service
 			fi ;;
@@ -170,6 +183,8 @@ Set_Service()
 				sv check $_service
 			elif $_isOpenrc; then
 				rc-service $_service status
+			elif $_isDinit; then
+				dinitctl status $_service
 			elif $_isSystemd; then
 				systemctl status $_service
 			fi ;;
@@ -564,6 +579,8 @@ Change_Server()
 			Fix_Permissions
 
 			vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
+			unlink /etc/openvpn/currentvpn.conf # For dinit
+			ln -s $vpnConfFile /etc/openvpn/currentvpn.conf # For dinit
 			VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
 			VPN_PORT=$(awk '/remote / {print $3}' $vpnConfFile)
 			VPN_PORT=$(Clean_Number $VPN_PORT)
