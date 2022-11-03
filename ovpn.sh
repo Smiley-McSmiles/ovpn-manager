@@ -577,9 +577,9 @@ Change_Server()
 		if (($defaultVPNConnectionNumber >= 1 && $defaultVPNConnectionNumber <= $maxNumber)); then
 			Stop_vpn
 			Disable_vpn
-			sed -i -e "s/$VPN_IP_OLD/d" /etc/ufw/user.rules
+			sed -i -e "/$VPN_IP_OLD/d" /etc/ufw/user.rules
 			for _ip in ${localIPList[@]}; do
-				sed -i -e "s/$_ip/d" /etc/ufw/user.rules
+				sed -i -e "/$_ip/d" /etc/ufw/user.rules
 			done
 
 			defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
