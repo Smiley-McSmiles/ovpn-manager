@@ -2,7 +2,7 @@
 #/bin/ovpn
 
 ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.8"
+version="1.1.9"
 
 Has_sudo()
 {
@@ -317,6 +317,8 @@ Killswitch_Enable()
 	echo "Enabling Kill Switch..."
 	Change_variable killSwitchEnabled true bool $ovpnConf
 	vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
+	localIPList=$(ip route | grep /24 | awk '{print $1}')
+	localIPList=($(echo "$localIPList"))
 	VPN_IP=$(awk '/remote / {print $2}' $vpnConfFile)
 	VPN_PORT=$(awk '/remote / {print $3}' $vpnConfFile)
 	VPN_PORT=$(Clean_Number $VPN_PORT)
@@ -372,21 +374,25 @@ Killswitch_Enable()
 		
 		ufw allow out to $VPN_IP port $VPN_PORT proto $VPN_PORT_PROTO
 		
+		for _ip in ${localIPList[@]}; do
+			ufw allow out from any to $_ip
+			ufw allow in from any to $_ip
+		done
+		
 		# ufw allow out from any to $VPN_IP
 		# ufw allow in from any to $VPN_IP
-		
-		ufw allow out from any to 10.0.0.0/24
-		ufw allow out from any to 10.0.1.0/24
-		ufw allow out from any to 172.16.0.0/24
-		ufw allow out from any to 172.16.1.0/24
-		ufw allow out from any to 192.168.0.0/24
-		ufw allow out from any to 192.168.1.0/24
-		ufw allow in from any to 10.0.0.0/24
-		ufw allow in from any to 10.0.1.0/24
-		ufw allow in from any to 172.16.0.0/24
-		ufw allow in from any to 172.16.1.0/24
-		ufw allow in from any to 192.168.0.0/24
-		ufw allow in from any to 192.168.1.0/24
+		# ufw allow out from any to 10.0.0.0/24
+		# ufw allow out from any to 10.0.1.0/24
+		# ufw allow out from any to 172.16.0.0/24
+		# ufw allow out from any to 172.16.1.0/24
+		# ufw allow out from any to 192.168.0.0/24
+		# ufw allow out from any to 192.168.1.0/24
+		# ufw allow in from any to 10.0.0.0/24
+		# ufw allow in from any to 10.0.1.0/24
+		# ufw allow in from any to 172.16.0.0/24
+		# ufw allow in from any to 172.16.1.0/24
+		# ufw allow in from any to 192.168.0.0/24
+		# ufw allow in from any to 192.168.1.0/24
 		
 		ufw reload
 		
@@ -548,6 +554,9 @@ Change_Server()
 	fi
 	
 	vpnList=$(ls -1 /etc/openvpn/client/)
+	localIPList=$(ip route | grep /24 | awk '{print $1}')
+	localIPList=($(echo "$localIPList"))
+
 	echo "$vpnList" > /tmp/vpnlist.txt
 	sed -i -e "s|.conf||g" /tmp/vpnlist.txt
 	vpnListFile=/tmp/vpnlist.txt
@@ -568,9 +577,11 @@ Change_Server()
 		if (($defaultVPNConnectionNumber >= 1 && $defaultVPNConnectionNumber <= $maxNumber)); then
 			Stop_vpn
 			Disable_vpn
-			sed "/$VPN_IP_OLD/d" /etc/ufw/user.rules > /tmp/user.rules
-			mv -f /tmp/user.rules /etc/ufw/user.rules
-			chown -f root:root /etc/ufw/user.rules
+			sed -i -e "s/$VPN_IP_OLD/d" /etc/ufw/user.rules
+			for _ip in ${localIPList[@]}; do
+				sed -i -e "s/$_ip/d" /etc/ufw/user.rules
+			done
+
 			defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
 			Log "STATUS | Default OpenVPN connection changed to $defaultVPNConnection"
 			rm -f $vpnListFile
@@ -593,10 +604,21 @@ Change_Server()
 			ufw allow out from any to $VPN_IP
 			ufw allow in from any to $VPN_IP
 			ufw allow out to $VPN_IP port $VPN_PORT proto $VPN_PORT_PROTO
+
 			ufw reload
 			Enable_vpn
 			Start_vpn
 			
+			sleep 1
+			localIPList=$(ip route | grep /24 | awk '{print $1}')
+			localIPList=($(echo "$localIPList"))
+
+			for _ip in ${localIPList[@]}; do
+				ufw allow out from any to $_ip
+				ufw allow in from any to $_ip
+			done
+			ufw reload
+
 		else
 			defaultVPNConnectionNumber=0
 			let warning="ERROR Please select one of the numbers provided! - Or press CTRL+C to exit..."

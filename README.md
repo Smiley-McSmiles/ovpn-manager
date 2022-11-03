@@ -1,7 +1,7 @@
 # DESCRIPTION
 OVPN-Manager is a simple BASH script to install, and manage your OpenVPN client connetions. Switch between connections and enable a kill switch to prevent IP leaks and import and backup your .ovpn connections to use on another system for easy setup.
 
-> v1.1.8
+> v1.1.9
 
 > Tested on Fedora 36, Ubuntu 22.04, Arch Linux, and Artix Linux (Runit)
 
