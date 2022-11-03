@@ -797,14 +797,14 @@ See 'man ovpn' for more details.
 if [[ -n "$1" ]]; then
 	while [[ -n "$1" ]]; do
 		case "$1" in
-			-s) Start_vpn ;;
-			-S) Stop_vpn ;;
-			-t) Status_vpn ;;
-			-e) Enable_vpn ;;
-			-d) Disable_vpn ;;
-			-r) Restart_vpn ;;
-			-c) Change_Server ;;
-			-i) while [[ ! $2 == *".ovpn" ]] && [[ ! $2 == "-"* ]]; do
+			-s | --start) Start_vpn ;;
+			-S | --stop) Stop_vpn ;;
+			-t | --status) Status_vpn ;;
+			-e | --enable) Enable_vpn ;;
+			-d | --disable) Disable_vpn ;;
+			-r | --restart) Restart_vpn ;;
+			-c | --change-server) Change_Server ;;
+			-i | --import) while [[ ! $2 == *".ovpn" ]] && [[ ! $2 == "-"* ]]; do
 						echo "$2 is not a .ovpn file..."
 					done
 
@@ -812,22 +812,22 @@ if [[ -n "$1" ]]; then
 						Import_ovpn $2
 						shift
 					done ;;
-			-k) if [ ! -n $2 ]; then
+			-k | --killswitch) if [ ! -n $2 ]; then
 						echo "Please input 'on' or 'off' for kill switch command"
 					else
 						Killswitch $2
 					fi
 					shift;;
-			-f) Fix_Permissions ;;
-			-b) Backup ;;
-			-rb) Restore $2
+			-f | --fix-permissions) Fix_Permissions ;;
+			-b | --backup) Backup ;;
+			-rb | --restore-backup) Restore $2
 					shift ;;
-			-v) echo OpenVPN - Manager v$version;;
+			-v | --version) echo OpenVPN - Manager v$version;;
 			--dev-function)
 					$2
 					shift ;;
-			-l) View_logs ;;
-			-h) Help  ;;
+			-l | --view-logs) View_logs ;;
+			-h | --help) Help  ;;
 			*) echo "Option $1 not recognized" 
 				Help ;;
 		esac
