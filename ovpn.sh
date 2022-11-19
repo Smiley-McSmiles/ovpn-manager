@@ -282,6 +282,79 @@ Change_variable()
 	fi
 }
 
+Switch_DNS()
+{
+	if ! Has_sudo; then
+		echo "$USER, please run ovpn with sudo or as root"
+		exit
+	fi
+	source $ovpnConf
+
+	skip=$1
+	DNSOptions=(OpenDNS FreeDNS OpenNIC DNSWatch Censurfidns)
+	OpenDNS=("208.67.222.123" "208.67.220.123")
+	FreeDNS=("37.235.1.174" "37.235.1.177")
+	OpenNIC=("138.197.140.189" "137.220.55.93")
+	DNSWatch=("84.200.69.80" "84.200.70.40")
+	Censurfridns=("91.239.100.100" "89.233.43.71")
+	DNSChoice=
+	resolvFile=/etc/resolv.conf
+
+	if [[ ! -n $CurrentDNS ]]; then
+		DefaultDNS=$(cat $resolvFile | grep "nameserver" | cut -d " " -f 2)
+		Change_variable DefaultDNS $DefaultDNS string $ovpnConf
+	fi
+
+	while true; do
+		if [[ $skip == true ]]; then
+			case "$CurrentDNS" in
+				OpenDNS) DNSChoice=1 ;;
+				FreeDNS) DNSChoice=2 ;;
+				OpenNIC) DNSChoice=3 ;;
+				DNSWatch) DNSChoice=4 ;;
+				Censurfridns) DNSChoice=5 ;;
+			esac
+			# echo $DNSChoice
+		else
+			clear
+			echo "Current DNS : $CurrentDNS"
+			echo
+			echo "DNS Options:"
+			echo "1) OpenDNS"
+			echo "2) FreeDNS"
+			echo "3) OpenNIC"
+			echo "4) DNSWatch"
+			echo "5) Censurfridns"
+			echo
+			read -p "Please choose the number corresponding with the DNS you would like to use : [1-5]" DNSChoice
+		fi
+		if [ $DNSChoice -ge 1 ] && [ $DNSChoice -le 5 ]; then
+			DNSChoice=$(($DNSChoice - 1))
+			Change_variable CurrentDNS ${DNSOptions[$DNSChoice]} string $ovpnConf
+
+			_switch=true
+			while $_switch; do
+				sed -i -e "s/nameserver.*//g" $resolvFile
+				sed -i -e '/^[[:space:]]*$/d' $resolvFile
+				if ! grep -q "nameserver" $resolvFile; then
+					_switch=false
+				fi
+			done
+
+			case "$DNSChoice" in
+				0) DNSChoice=(${OpenDNS[*]});;
+				1) DNSChoice=(${FreeDNS[*]});;
+				2) DNSChoice=(${OpenNIC[*]});;
+				3) DNSChoice=(${DNSWatch[*]});;
+				4) DNSChoice=(${Censurfridns[*]});;
+			esac
+			echo "nameserver ${DNSChoice[0]}" >> $resolvFile
+			echo "nameserver ${DNSChoice[1]}" >> $resolvFile
+			exit
+		fi
+	done
+}
+
 Killswitch()
 {
 	if ! Has_sudo; then
@@ -314,6 +387,7 @@ Killswitch_Enable()
 	echo "${PPID}" > /run/ovpn/killswitch.pid
 
 	source $ovpnConf
+	sleep 15 && ovpn --dev-function "Switch_DNS true" &
 	echo "Enabling Kill Switch..."
 	Change_variable killSwitchEnabled true bool $ovpnConf
 	vpnConfFile=/etc/openvpn/client/$defaultVPNConnection.conf
@@ -774,6 +848,7 @@ COMMANDS:
 -r, --restart | Restart OpenVPN
 -c, --change-server | Change OpenVPN Connection
 -i, --import | Import OpenVPN .ovpn file
+-sd, --switch-dns | switch to new DNS server
 -k, --killswitch | [on/off] Enable or Disable the Killswitch
 -f, --fix-permissions | Fix OpenVPN permissions
 -v, --version | Print the version OpenVPN Manager
@@ -812,6 +887,7 @@ if [[ -n "$1" ]]; then
 						Import_ovpn $2
 						shift
 					done ;;
+			-sd | --switch-dns) Switch_DNS false ;;
 			-k | --killswitch) if [ ! -n $2 ]; then
 						echo "Please input 'on' or 'off' for kill switch command"
 					else

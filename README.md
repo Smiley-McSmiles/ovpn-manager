@@ -41,6 +41,7 @@ COMMANDS:
 -r, --restart | Restart OpenVPN
 -c, --change-server | Change OpenVPN Connection
 -i, --import | Import OpenVPN .ovpn file
+-sd, --switch-dns | switch to new DNS server
 -k, --killswitch | [on/off] Enable or Disable the Killswitch
 -f, --fix-permissions | Fix OpenVPN permissions
 -v, --version | Print the version OpenVPN Manager
