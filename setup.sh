@@ -56,7 +56,7 @@ Fix_Permissions()
 	if id "openvpn" &>/dev/null; then
 		chown -Rfv openvpn:openvpn /etc/openvpn
 		chmod -Rfv 750 /etc/openvpn
-	elif id "nm-openvpn" &>/dev/null; then
+	elif id "nm-openvpn" &>/dev/null; then # OpenSuse
 		chown -Rfv nm-openvpn:nm-openvpn /etc/openvpn
 		chmod -Rfv 750 /etc/openvpn
 	else
