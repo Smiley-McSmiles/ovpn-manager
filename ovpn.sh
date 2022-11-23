@@ -309,7 +309,7 @@ Switch_DNS()
 	fi
 
 	while true; do
-		if [[ $skip == true ]]; then
+		if [[ $skip == true ]] && [[ -n $CurrentDNS ]]; then
 			case "$CurrentDNS" in
 				OpenDNS) DNSChoice=1 ;;
 				FreeDNS) DNSChoice=2 ;;
@@ -321,7 +321,7 @@ Switch_DNS()
 				PIAVPN) DNSChoice=8 ;;
 			esac
 			# echo $DNSChoice
-		else
+		elif [[ -n $CurrentDNS ]]; then
 			clear
 			echo "Current DNS : $CurrentDNS"
 			echo
@@ -336,6 +336,9 @@ Switch_DNS()
 			echo "8) PIAVPN (INTERNAL ONLY)"
 			echo
 			read -p "Please choose the number corresponding with the DNS you would like to use [1-8] : " DNSChoice
+		else
+			Log "WARNING | NO DEFAULT DNS SERVER SELECTED, USING OpenDNS. Please run 'ovpn -sd' to set a DNS server."
+			DNSChoice=1
 		fi
 		if [ $DNSChoice -ge 1 ] && [ $DNSChoice -le 8 ]; then
 			DNSChoice=$(($DNSChoice - 1))
