@@ -130,6 +130,9 @@ Setup()
 		read -p "Input your VPN Account Name : " vpnAccountName
 		read -p "Input your VPN Password : " vpnPassword
 		clear
+	elif [ -f /etc/openvpn/ovpn.conf ]; then # Remove on v1.2.5
+		mkdir -p /etc/openvpn/.ovpn/configs /etc/openvpn/.ovpn/backups
+		mv -f /etc/openvpn/ovpn.conf /etc/openvpn/.ovpn/configs/ovpn.conf
 	fi
 
 	if [ -x "$(command -v sv)" ]; then
@@ -161,8 +164,7 @@ Setup()
 
 
 	if [[ -n $vpnAccountName ]]; then
-		mkdir -p /etc/openvpn/accounts/
-		mkdir -p /etc/openvpn/client/
+		mkdir -p /etc/openvpn/accounts/ /etc/openvpn/client/ /etc/openvpn/.ovpn/configs /etc/openvpn/.ovpn/backups
 		echo "$accountUserName" >> /etc/openvpn/accounts/$accountFileName
 	 	echo "$accountPassWord" >> /etc/openvpn/accounts/$accountFileName
 		ls -w 1 /etc/openvpn/accounts/
