@@ -1,8 +1,9 @@
 #!/bin/bash
 #/bin/ovpn
 
-ovpnConf=/etc/openvpn/ovpn.conf
-version="1.1.9"
+ovpnConf=/etc/openvpn/.ovpn/configs/ovpn.conf
+ovpnDir=/etc/openvpn/.ovpn
+version="1.2.0"
 
 Has_sudo()
 {
@@ -288,8 +289,9 @@ Switch_DNS()
 		echo "$USER, please run ovpn with sudo or as root"
 		exit
 	fi
-	source $ovpnConf
 
+	DefaultDNS=
+	source $ovpnConf
 	skip=$1
 	DNSOptions=(OpenDNS FreeDNS OpenNIC DNSWatch Censurfidns AirVPN NordVPN PIAVPN)
 	OpenDNS=("208.67.222.123" "208.67.220.123")
@@ -306,6 +308,7 @@ Switch_DNS()
 	if [[ ! -n $CurrentDNS ]]; then
 		DefaultDNS=$(cat $resolvFile | grep "nameserver" | cut -d " " -f 2)
 		Change_variable DefaultDNS $DefaultDNS string $ovpnConf
+		cp -f $resolvFile $ovpnDir/backups/
 	fi
 
 	while true; do
@@ -578,6 +581,7 @@ Killswitch_Disable()
 		exit
 	fi
 
+	resolvFile=/etc/resolv.conf
 	ufw default allow outgoing
 	ufw default allow incoming
 	ufw reload
@@ -589,6 +593,8 @@ Killswitch_Disable()
 	publicIp=$(dig +short myip.opendns.com @resolver1.opendns.com)
 	echo "Public IP --> $publicIP"
 	Log "STATUS | KILL SWITCH DISENGAGED | KILLSWITCH"
+	cp -f $ovpnDir/backups/resolv.conf $resolvFile
+	Log "STATUS | RESTORED PREVIOUS DNS SERVER | KILLSWITCH"
 	echo
 }
 
@@ -646,12 +652,12 @@ Change_Server()
 	fi
 	
 	vpnList=$(ls -1 /etc/openvpn/client/)
+	vpnListFile=/tmp/vpnlist.txt
 	localIPList=$(ip route | grep /24 | awk '{print $1}')
 	localIPList=($(echo "$localIPList"))
 
-	echo "$vpnList" > /tmp/vpnlist.txt
-	sed -i -e "s|.conf||g" /tmp/vpnlist.txt
-	vpnListFile=/tmp/vpnlist.txt
+	echo "$vpnList" > $vpnListFile
+	sed -i -e "s|.conf||g" $vpnListFile
 	maxNumber=$(echo "$vpnList" | wc -l)
 	defaultVPNConnectionNumber=0
 	warning=""
@@ -670,9 +676,16 @@ Change_Server()
 			Stop_vpn
 			Disable_vpn
 			sed -i -e "/$VPN_IP_OLD/d" /etc/ufw/user.rules
-			for _ip in ${localIPList[@]}; do
-				sed -i -e "/$_ip/d" /etc/ufw/user.rules
-			done
+
+			if [[ -n ${localIPList[1]} ]]; then
+				for _ip in ${localIPList[@]}; do
+					_ip2=$(echo $_ip | cut -d "/" -f 1)
+					sed -i -e "/$_ip2.*/d" /etc/ufw/user.rules
+				done
+			else
+				_ip2=$(echo $localIPList | cut -d "/" -f 1)
+				sed -i -e "/$_ip2.*/d" /etc/ufw/user.rules
+			fi
 
 			defaultVPNConnection=$(cat $vpnListFile | head -n $defaultVPNConnectionNumber | tail -n 1)
 			Log "STATUS | Default OpenVPN connection changed to $defaultVPNConnection"
